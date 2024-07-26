@@ -681,7 +681,7 @@ function injectBlock(block, blockConfig) {
     const position = blockConfig.injection_position;
     const role = blockConfig.injection_role;
     const depth = blockConfig.injection_depth;
-    setExtensionPrompt(key, block, position, depth, false, role);
+    setExtensionPrompt(key, block, position, depth, true, role);
 }
 
 function flushInjects() {
