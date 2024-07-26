@@ -1,0 +1,133 @@
+<div class="extblocks_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b data-i18n="ExtBlocks">ExtBlocks</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+
+
+        <div class="inline-drawer-content">
+			<label class="flex-container">
+				<input type="checkbox" id="extblocks_is_enabled"><span data-i18n="Enable ExtBlocks">Enable ExtBlocks</span>
+			</label>
+
+            <div class="ExtBlocks-preset">
+                <strong for="ExtBlocks-preset-actions" data-i18n="ExtBlocks Preset">
+                    ExtBlocks Preset:
+                </strong>
+                <div class="ExtBlocks-preset-actions">
+                    <select id="ExtBlocks-preset-list" class="text_pole"></select>
+                    <div class="ExtBlocks-preset-add menu_button menu_button_icon fa-solid fa-plus" id="ExtBlocks-preset-new" title="Create new ExtBlocks set"></div>
+                    <div class="ExtBlocks-preset-add menu_button menu_button_icon fa-solid fa-file-import" id="ExtBlocks-preset-import" title="Import ExtBlocks set"></div>
+                    <input type="file" id="ExtBlocks-preset-importFile" accept=".json" hidden>
+                    <div class="ExtBlocks-preset-add menu_button menu_button_icon fa-solid fa-file-export" id="ExtBlocks-preset-export" title="Export ExtBlocks set"></div>
+                    <div class="ExtBlocks-preset-del menu_button menu_button_icon fa-solid fa-trash redWarningBG" id="ExtBlocks-preset-delete" title="Delete ExtBlocks set"></div>
+                </div>
+            </div>
+
+            <div id="ExtBlocks-proxy-toggle" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-proxy-tip" title="Proxy settings, temperature, system prompt, etc.">
+                <i class="fa-solid fa-cog"></i>
+                <span data-i18n="ExtBlocks-proxy-settings">API Settings</span>
+            </div>
+
+            <div id="ExtBlocks-proxy" style="display:none;">
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-ccsource" data-i18n="Chat Completion Source">
+                        Chat Completion Source:
+                    </label>
+                    <select id="ExtBlocks-proxy-ccsource" class="text_pole">
+                        <option value="openai">OpenAI</option>
+                        <option value="claude">Claude</option>
+                    </select>
+                </div>
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-preset" data-i18n="Proxy Preset">
+                        Proxy Preset:
+                    </label>
+                    <select id="ExtBlocks-proxy-preset" class="text_pole">
+                    </select>
+                </div>
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-ccmodel" data-i18n="Chat Completion Model">
+                        Chat Completion Model:
+                    </label>
+                    <select id="ExtBlocks-proxy-ccmodel" class="text_pole">
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet-20240620</option>
+                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
+                    </select>
+                </div>
+
+                <hr>
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-temperature" data-i18n="Temperature">
+                        Temperature:
+                    </label>
+                    <input id="ExtBlocks-proxy-temperature" class="text_pole" type="number" min="0" max="2.0" step="0.01">
+                </div>
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-system" data-i18n="System Prompt">
+                        System Prompt:
+                    </label>
+                    <textarea class="textarea_compact text_pole" id="ExtBlocks-proxy-system" rows="3"></textarea>
+                </div>
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-prefill" data-i18n="Assistant Prefill">
+                        Assistant Prefill:
+                    </label>
+                    <textarea class="textarea_compact text_pole" id="ExtBlocks-proxy-prefill" rows="3"></textarea>
+                </div>
+            
+            </div>
+
+            <hr>
+
+            <div id="ExtBlocks-blocks-global">
+                <div>
+                    <strong data-i18n="ExtBlocks-blocks-global-label">Preset blocks:</strong>
+                </div>
+                <div class="flex-container">
+                    <div id="ExtBlocks-blocks-global-openeditor" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-blocks-global-new-desc" title="New block">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <small data-i18n="ExtBlocks-blocks-global-new">+ Block</small>
+                    </div>
+                    <div id="ExtBlocks-blocks-global-import" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-file-import"></i>
+                        <small data-i18n="ExtBlocks-blocks-global-import">Import</small>
+                    </div>
+                    <input type="file" id="ExtBlocks-blocks-global-import-file" hidden accept="*.json" multiple />
+                </div>
+
+                <div id="ExtBlocks-blocks-global-list" class="flex-container ExtBlocks-blocks-container flexFlowColumn"></div>
+            </div>
+
+            <hr>
+
+            <div id="ExtBlocks-blocks-scoped">
+                <div>
+                    <strong data-i18n="ExtBlocks-blocks-scoped-label" title="Blocks embedded in the сurrent card.">Embedded blocks:</strong>
+                </div>
+                <div class="flex-container">
+                    <div id="ExtBlocks-blocks-scoped-openeditor" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-blocks-scoped-new-desc" title="New block">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <small data-i18n="ExtBlocks-blocks-scoped-new">+ Block</small>
+                    </div>
+                    <div id="ExtBlocks-blocks-scoped-import" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-file-import"></i>
+                        <small data-i18n="ExtBlocks-blocks-scoped-import">Import</small>
+                    </div>
+                    <input type="file" id="ExtBlocks-blocks-scoped-import-file" hidden accept="*.json" multiple />
+                </div>
+
+                <div id="ExtBlocks-blocks-scoped-list" class="flex-container ExtBlocks-blocks-container flexFlowColumn"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
