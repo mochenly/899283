@@ -6,7 +6,7 @@ import { getRegexedString, runRegexScript } from '../../../extensions/regex/engi
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../../utils.js';
 import { proxies, selected_proxy } from '../../../openai.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument} from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
 const { extensionPrompts, saveChat } = SillyTavern.getContext();
@@ -786,22 +786,22 @@ function extractMessageFromData(data) {
     }
 }
 
-async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks) {
+async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}) {
     const groupedBlocks = groupBlocksByContext(triggeredBlocks);
 
     const prompts = [];
 
     Object.entries(groupedBlocks).forEach(([context, blocks]) => {
         let combinedContext = '';
-        let combinedTemplate = `Block(s) template:\n${blocks.map(block => substituteParamsExtended(block.template)).join('\n')}`;
-        let combinedPrompt = `Block(s) prompt:\n${blocks.map(block => substituteParamsExtended(block.prompt)).join('\n')}`;
+        let combinedTemplate = `Block(s) template:\n${blocks.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
+        let combinedPrompt = `Block(s) prompt:\n${blocks.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
 
         if (blocks.length != 0) {
             const block = blocks[0];
             let contextStringArray = [];
             block.context.forEach((context_item) => {
                 if (context_item.type === 'text') {
-                    contextStringArray.push(substituteParamsExtended(context_item.text));
+                    contextStringArray.push(substituteParamsExtended(context_item.text, additionalMacro));
 
                 } else if (context_item.type === 'last_messages') {
                     contextStringArray.push(getLastMessagesContext(context_item));
@@ -886,18 +886,23 @@ async function handleCharTrigger(messageId) {
     await handleMessageTrigger(messageId, false);
 }
 
-async function runBlockGenerationCallback(_, block_name) {
-    if (!block_name) {
+async function runBlockGenerationCallback(args, additional_prompt) {
+    if (!args.name) {
         toastr.warning(`No block name provided`);
         return '';
     }
+    const block_name = args.name;
 
     const allBlocks = getAllBlocks();
     const block = allBlocks.find((e) => e.name === block_name);
     if (block) {
         const messageId = chat.length - 1;
         const isUser = block.user_message && !block.char_message;
-        await handleBlocksGeneration(messageId, isUser, allBlocks, [block]);
+        let additionalMacro = {};
+        if (additional_prompt !== '') {
+            additionalMacro = { additionalPrompt: additional_prompt }
+        }
+        await handleBlocksGeneration(messageId, isUser, allBlocks, [block], additionalMacro);
     } else {
         toastr.warning(`Block "${block_name}" not found.`);
     }
@@ -1070,9 +1075,17 @@ jQuery(async () => {
         name: 'extblocks-generate',
         callback: runBlockGenerationCallback,
         returns: 'void',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'block name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'block name', [ARGUMENT_TYPE.STRING], true,
+                'additional prompt', [ARGUMENT_TYPE.STRING], false, false, ''
             ),
         ],
         helpString: 'Starts generating a block by its name.',
