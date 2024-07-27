@@ -250,8 +250,13 @@
                     </div>
                     <hr>
                     <div id="ExtBlocks-editor-context-wrapper" class="ExtBlocks-editor-context-wrapper">
-                        <div>
+                        <div class="ExtBlocks-editor-context-list-label justifyCenter">
                             <strong data-i18n="ExtBlocks-editor-context-list-label">Context:</strong>
+                            <div class="ExtBlocks-editor-context-list-actions">
+                                <div class="ExtBlocks-editor-context-import menu_button menu_button_icon fa-solid fa-file-import" id="ExtBlocks-editor-context-import" title="Import context"></div>
+                                <input type="file" id="ExtBlocks-editor-context-importFile" accept=".json" hidden>
+                                <div class="ExtBlocks-editor-context-export menu_button menu_button_icon fa-solid fa-file-export" id="ExtBlocks-editor-context-export" title="Export context"></div>
+                            </div>
                         </div>
                         <div id="ExtBlocks-editor-context-list" class="flex-container ExtBlocks-editor-context-container flexFlowColumn"></div>
                     </div>

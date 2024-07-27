@@ -448,6 +448,35 @@ async function openEditor(existingId, isScoped) {
     
         contextItems.forEach((context_item, index, array) => renderContextItem('#ExtBlocks-editor-context-list', context_item, index));
     }
+
+    editorHtml.find('#ExtBlocks-editor-context-importFile').on('change', async function () {
+        const inputElement = this instanceof HTMLInputElement && this;
+        for (const file of inputElement.files) {
+            if (!file) {
+                toastr.error('No file provided.');
+                return;
+            }
+        
+            try {
+                const fileText = await getFileText(file);
+                contextItems = JSON.parse(fileText).items;
+                await loadContextItems(editorHtml)
+            } catch (error) {
+                console.log(error);
+                toastr.error('Invalid JSON file.');
+                return;
+            }
+        }
+        inputElement.value = '';
+    });
+    editorHtml.find('#ExtBlocks-editor-context-import').on('click', function () {
+        editorHtml.find('#ExtBlocks-editor-context-importFile').trigger('click');
+    });
+    editorHtml.find('#ExtBlocks-editor-context-export').on('click', async function () {
+        const fileName = `context.json`;
+        const fileData = JSON.stringify({items: contextItems}, null, 4);
+        download(fileData, fileName, 'application/json');
+    });
     
     let existingBlockIndex = -1;
     if (existingId) {
