@@ -5,6 +5,9 @@ import { extension_settings, writeExtensionField, renderExtensionTemplateAsync }
 import { getRegexedString, runRegexScript } from '../../../extensions/regex/engine.js'
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../../utils.js';
 import { proxies, selected_proxy } from '../../../openai.js';
+import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
 const { extensionPrompts, saveChat } = SillyTavern.getContext();
 
@@ -721,9 +724,13 @@ function flushInjects() {
     }
 }
 
-function getAllEnabledBlocks() {
+function getAllBlocks() {
     const embeddedBlocks = characters[this_chid]?.data?.extensions?.ExtBlocks ?? [];
-    return priorityCombineBlocks(current_set.global_blocks.filter(item => !item.disabled), embeddedBlocks.filter(item => !item.disabled));
+    return priorityCombineBlocks(current_set.global_blocks, embeddedBlocks);
+}
+
+function getAllEnabledBlocks() {
+    return getAllBlocks().filter(item => !item.disabled);
 }
 
 async function generateBlocks(prompt) {
@@ -779,13 +786,7 @@ function extractMessageFromData(data) {
     }
 }
 
-async function handleMessageTrigger(messageId, isUser) {
-    const allBlocks = getAllEnabledBlocks();
-    const triggeredBlocks = allBlocks.filter((block) => {
-        const trigger_predicate = isUser ? block.user_message : block.char_message;
-        const period_predicate = isUser ? ((messageId - 1) % block.period === 0) : (messageId % block.period === 0);
-        return trigger_predicate && period_predicate;
-    });
+async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks) {
     const groupedBlocks = groupBlocksByContext(triggeredBlocks);
 
     const prompts = [];
@@ -833,6 +834,16 @@ async function handleMessageTrigger(messageId, isUser) {
     }
 }
 
+async function handleMessageTrigger(messageId, isUser) {
+    const allBlocks = getAllEnabledBlocks();
+    const triggeredBlocks = allBlocks.filter((block) => {
+        const trigger_predicate = isUser ? block.user_message : block.char_message;
+        const period_predicate = isUser ? ((messageId - 1) % block.period === 0) : (messageId % block.period === 0);
+        return trigger_predicate && period_predicate;
+    });
+    await handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks);
+}
+
 
 async function handleUserTrigger(messageId, is_swipe = false) {
     if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
@@ -873,6 +884,24 @@ async function handleCharTrigger(messageId) {
     }
 
     await handleMessageTrigger(messageId, false);
+}
+
+async function runBlockGenerationCallback(_, block_name) {
+    if (!block_name) {
+        toastr.warning(`No block name provided`);
+        return '';
+    }
+
+    const allBlocks = getAllBlocks();
+    const block = allBlocks.find((e) => e.name === block_name);
+    if (block) {
+        const messageId = chat.length - 1;
+        const isUser = block.user_message && !block.char_message;
+        await handleBlocksGeneration(messageId, isUser, allBlocks, [block]);
+    } else {
+        toastr.warning(`Block "${block_name}" not found.`);
+    }
+    return '';
 }
 
 async function setupListeners() {
@@ -1037,5 +1066,16 @@ jQuery(async () => {
     eventSource.on(event_types.USER_MESSAGE_RENDERED, handleUserTrigger);
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleCharTrigger);
     eventSource.on(event_types.MESSAGE_SWIPED, async (messageId) => await handleUserTrigger(messageId -1, true));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extblocks-generate',
+        callback: runBlockGenerationCallback,
+        returns: 'void',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'block name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'Starts generating a block by its name.',
+    }));
     console.log(`${defaultExtPrefix} extension loaded`);
 });
