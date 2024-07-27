@@ -722,6 +722,7 @@ function flushInjects() {
             delete extensionPrompts[key];
         }
     }
+    return '';
 }
 
 function getAllBlocks() {
@@ -900,7 +901,7 @@ async function runBlockGenerationCallback(args, additional_prompt) {
         const isUser = block.user_message && !block.char_message;
         let additionalMacro = {};
         if (additional_prompt !== '') {
-            additionalMacro = { additionalPrompt: additional_prompt }
+            additionalMacro = { additionalPrompt: substituteParamsExtended(additional_prompt) }
         }
         await handleBlocksGeneration(messageId, isUser, allBlocks, [block], additionalMacro);
     } else {
@@ -930,6 +931,7 @@ async function setupListeners() {
         if (value) {
             await createRegexForBlocks();
         } else {
+            flushInjects();
             await purgeRegexForBlocks();
         }
         saveSettingsDebounced();
@@ -1111,5 +1113,13 @@ jQuery(async () => {
         returns: 'void',
         helpString: 'Regenerates last blocks.',
     }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extblocks-flushinjects',
+        callback: flushInjects,
+        returns: 'void',
+        helpString: 'Flushes ExtBlocks injects.',
+    }));
+    
     console.log(`${defaultExtPrefix} extension loaded`);
 });
