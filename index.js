@@ -699,12 +699,15 @@ function getAllEnabledBlocks() {
 
 async function generateBlocks(prompt) {
     let messages = [{ role: 'user', content: prompt.trim() }];
-    messages.unshift({ role: 'system', content: substituteParamsExtended(current_set.system_prompt.trim()) });
+    if (current_set.system_prompt !== '') {
+        messages.unshift({ role: 'system', content: substituteParamsExtended(current_set.system_prompt.trim()) });
+    }
     let generate_data = {
         'messages': messages,
         'model': current_set.model,
         'temperature': current_set.temperature,
         'stream': false,
+        'top_p': 1,
         'chat_completion_source': current_set.chat_completion_source,
         'max_tokens': 2048
     };
