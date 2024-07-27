@@ -637,7 +637,15 @@ function priorityCombineBlocks(globalBlocks, scopedBlocks) {
 }
 
 function getLastMessagesContext(item) {
-    let lastMessages = chat.slice(-item.messages_count);
+    let lastMessages;
+    const messages_count = item.messages_count;
+    if (messages_count > 0) {
+        lastMessages = chat.slice(-item.messages_count);
+    } else if (messages_count < 0) {
+        lastMessages = chat.slice(0, -item.messages_count);
+    } else {
+        return '';
+    }
     let separator;
     if (item.separator == 'newline') {
         separator = '\n'
@@ -712,7 +720,10 @@ function injectBlock(block, blockConfig) {
     const key = `${defaultExtPrefix} ${blockConfig.name}`;
     const position = blockConfig.injection_position;
     const role = blockConfig.injection_role;
-    const depth = blockConfig.injection_depth;
+    let depth = blockConfig.injection_depth;
+    if (depth < 0) {
+        depth = chat.length - depth;
+    }
     setExtensionPrompt(key, block, position, depth, true, role);
 }
 
@@ -805,7 +816,10 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
                     contextStringArray.push(substituteParamsExtended(context_item.text, additionalMacro));
 
                 } else if (context_item.type === 'last_messages') {
-                    contextStringArray.push(getLastMessagesContext(context_item));
+                    const lastMessages = getLastMessagesContext(context_item);
+                    if (lastMessages != '') {
+                        contextStringArray.push(lastMessages);
+                    }
 
                 } else if (context_item.type === 'previous_block') {
                     const previousBlock = getPreviousBlockContext(context_item, messageId, allBlocks);
@@ -1120,6 +1134,6 @@ jQuery(async () => {
         returns: 'void',
         helpString: 'Flushes ExtBlocks injects.',
     }));
-    
+
     console.log(`${defaultExtPrefix} extension loaded`);
 });
