@@ -909,6 +909,20 @@ async function runBlockGenerationCallback(args, additional_prompt) {
     return '';
 }
 
+async function runBlockRegenerationCallback() {
+    const messageId = chat.length - 1;
+    if (messageId == 0) {
+        return;
+    }
+    const isUser = chat[messageId].is_user;
+    chat[messageId].mes = runRegexScript(blocksPurgeScript, chat[messageId].mes);
+    await saveChat();
+    await reloadCurrentChat();
+
+    await handleMessageTrigger(messageId, isUser);
+    return '';
+}
+
 async function setupListeners() {
     $('#extblocks_is_enabled').off('click').on('click', async () => {
         const value = $('#extblocks_is_enabled').prop('checked');
@@ -1089,6 +1103,13 @@ jQuery(async () => {
             ),
         ],
         helpString: 'Starts generating a block by its name.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extblocks-regenerate',
+        callback: runBlockRegenerationCallback,
+        returns: 'void',
+        helpString: 'Regenerates last blocks.',
     }));
     console.log(`${defaultExtPrefix} extension loaded`);
 });
