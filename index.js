@@ -1,5 +1,6 @@
 import { saveSettingsDebounced, substituteParamsExtended, setExtensionPrompt, callPopup,
-    reloadCurrentChat, this_chid, characters, eventSource, event_types, chat, getRequestHeaders } from '../../../../script.js';
+    reloadCurrentChat, this_chid, characters, eventSource, event_types, chat, getRequestHeaders,
+    addOneMessage, system_message_types, system_avatar } from '../../../../script.js';
 import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { getRegexedString, runRegexScript } from '../../../extensions/regex/engine.js'
@@ -798,7 +799,7 @@ function extractMessageFromData(data) {
     }
 }
 
-async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}) {
+async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}, is_separate = false) {
     const groupedBlocks = groupBlocksByContext(triggeredBlocks);
 
     const prompts = [];
@@ -839,11 +840,32 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
         for (let idx = 0; idx < prompts.length; idx++) {
             const blocksData = await generateBlocks(prompts[idx]);
             const blocks = extractMessageFromData(blocksData);
-            chat[messageId].mes = `${chat[messageId].mes}\n${blocks}`;
+            if (!is_separate) {
+                chat[messageId].mes = `${chat[messageId].mes}\n${blocks}`;
+            } else {
+                const message = {
+                    name: 'System',
+                    is_user: false,
+                    is_system: true,
+                    mes: blocks,
+                    force_avatar: system_avatar,
+                    extra: {
+                        type: system_message_types.NARRATOR,
+                        bias: null,
+                        gen_id: Date.now(),
+                        api: 'manual',
+                        model: 'slash command',
+                    },
+                };
+                chat.push(message);
+                await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+                addOneMessage(message);
+                await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+            };
             await saveChat();
         }
         toastr.success(`${defaultExtPrefix} Done!`);
-        if (!isUser) {
+        if (!isUser && !is_separate) {
             await selfReloadCurrentChat();
         }
     }
@@ -862,6 +884,10 @@ async function handleMessageTrigger(messageId, isUser) {
 
 async function handleUserTrigger(messageId, is_swipe = false) {
     if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
+        return;
+    }
+
+    if (chat[messageId].is_system) {
         return;
     }
 
@@ -917,7 +943,11 @@ async function runBlockGenerationCallback(args, additional_prompt) {
         if (additional_prompt !== '') {
             additionalMacro = { additionalPrompt: substituteParamsExtended(additional_prompt) }
         }
-        await handleBlocksGeneration(messageId, isUser, allBlocks, [block], additionalMacro);
+        let is_separate = false;
+        if (args.is_separate) {
+            is_separate = args.is_separate;
+        }
+        await handleBlocksGeneration(messageId, isUser, allBlocks, [block], additionalMacro, is_separate);
     } else {
         toastr.warning(`Block "${block_name}" not found.`);
     }
@@ -1112,6 +1142,12 @@ jQuery(async () => {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'is_separate',
+                description: 'whether the block should create a new message',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+            })
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
