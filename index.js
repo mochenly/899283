@@ -362,6 +362,11 @@ async function loadBlocks() {
             const fileData = JSON.stringify(block, null, 4);
             download(fileData, fileName, 'application/json');
         });
+        blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
+            const fileName = `${block.name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()} prompt.json`;
+            const fileData = JSON.stringify({fullPrompt: getSingleBlockFullPrompt(block)}, null, 4);
+            download(fileData, fileName, 'application/json');
+        });
         blockHtml.find('.delete_ExtBlocks').on('click', async function () {
             const confirm = await callPopup('Are you sure you want to delete this block?', 'confirm');
 
@@ -558,7 +563,7 @@ async function openEditor(existingId, isScoped) {
                 id: id,
                 name: name,
                 type: context_type,
-                messages_count: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val())),
+                messages_count: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val())) || 10,
                 messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val()),
                 user_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val()).replace(/\\n/g, '\n'),
                 user_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val()).replace(/\\n/g, '\n'),
@@ -594,12 +599,12 @@ async function openEditor(existingId, isScoped) {
             prompt: String(editorHtml.find('.ExtBlocks-editor-block-prompt').val()),
             user_message: editorHtml.find('input[name="user_message"]').prop('checked'),
             char_message: editorHtml.find('input[name="char_message"]').prop('checked'),
-            period: parseInt(String(editorHtml.find('input[name="period"]').val())) ?? 2,
+            period: parseInt(String(editorHtml.find('input[name="period"]').val())) || 2,
             hide_display: editorHtml.find('input[name="hide_display"]').prop('checked'),
             inject_block: editorHtml.find('input[name="inject_block"]').prop('checked'),
             injection_role: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-role"]`).val())),
             injection_position: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-position"]`).val())),
-            injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val())) ?? 4,
+            injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val())) || 4,
             context: contextItems
         };
 
@@ -799,6 +804,41 @@ function extractMessageFromData(data) {
     }
 }
 
+function getBlockCombinedContext(block, messageId, allBlocks, additionalMacro = {}) {
+    let contextStringArray = [];
+    block.context.forEach((context_item) => {
+        if (context_item.type === 'text') {
+            contextStringArray.push(substituteParamsExtended(context_item.text, additionalMacro));
+
+        } else if (context_item.type === 'last_messages') {
+            const lastMessages = getLastMessagesContext(context_item);
+            if (lastMessages != '') {
+                contextStringArray.push(lastMessages);
+            }
+
+        } else if (context_item.type === 'previous_block') {
+            const previousBlock = getPreviousBlockContext(context_item, messageId, allBlocks);
+            if (previousBlock !== '') {
+                contextStringArray.push(previousBlock);
+            }
+        }
+    });
+    return contextStringArray.join('\n');
+}
+
+function getSingleBlockFullPrompt(block) {
+    if (this_chid === undefined) {
+        return ''
+    }
+    const messageId = chat.length - 1;
+    const allBlocks = getAllEnabledBlocks();
+    const blockTemplate = `Block(s) template:\n${substituteParamsExtended(block.template)}`;
+    const blockPrompt = `Block(s) prompt:\n${substituteParamsExtended(block.prompt)}`;
+    const blockContext = getBlockCombinedContext(block, messageId, allBlocks);
+
+    return `${blockContext}\n\n\n${blockTemplate}\n\n${blockPrompt}`;
+}
+
 async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}, is_separate = false) {
     const groupedBlocks = groupBlocksByContext(triggeredBlocks);
 
@@ -811,25 +851,7 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
 
         if (blocks.length != 0) {
             const block = blocks[0];
-            let contextStringArray = [];
-            block.context.forEach((context_item) => {
-                if (context_item.type === 'text') {
-                    contextStringArray.push(substituteParamsExtended(context_item.text, additionalMacro));
-
-                } else if (context_item.type === 'last_messages') {
-                    const lastMessages = getLastMessagesContext(context_item);
-                    if (lastMessages != '') {
-                        contextStringArray.push(lastMessages);
-                    }
-
-                } else if (context_item.type === 'previous_block') {
-                    const previousBlock = getPreviousBlockContext(context_item, messageId, allBlocks);
-                    if (previousBlock !== '') {
-                        contextStringArray.push(previousBlock);
-                    }
-                }
-            });
-            combinedContext = contextStringArray.join('\n');
+            combinedContext = getBlockCombinedContext(block, messageId, allBlocks, additionalMacro);
         };
         
         const fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
