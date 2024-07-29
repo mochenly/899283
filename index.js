@@ -728,7 +728,7 @@ function getPreviousBlockMessageId(messageId, blockConfig, may_current = false) 
 function getPreviousBlockContext(item, messageId, allBlocks) {
     const previousBlockConfig = allBlocks.find(obj => obj.name === item.block_name);
     if (previousBlockConfig) {
-        getPreviousBlockContextUnconditional(previousBlockConfig, messageId);
+        return getPreviousBlockContextUnconditional(previousBlockConfig, messageId);
     }
 
     return '';
@@ -736,13 +736,13 @@ function getPreviousBlockContext(item, messageId, allBlocks) {
 
 function getPreviousBlockContextUnconditional(block, messageId) {
     const previous_block_message_id = getPreviousBlockMessageId(messageId, block);
-        if (previous_block_message_id >= 0) {
-            const previous_block_message = chat[previous_block_message_id].mes;
-            const previous_block = getBlockFromMessage(previous_block_message, block.name);
-            return previous_block;
-        } else {
-            return '';
-        }
+    if (previous_block_message_id >= 0) {
+        const previous_block_message = chat[previous_block_message_id].mes;
+        const previous_block = getBlockFromMessage(previous_block_message, block.name);
+        return previous_block;
+    } else {
+        return '';
+    }
 }
 
 
