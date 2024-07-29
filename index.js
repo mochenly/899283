@@ -776,8 +776,7 @@ function getAllEnabledBlocks() {
 }
 
 function insertBlockMacros(block) {
-    const messageId = chat.length - 1;
-    const getBlockContext = () => getPreviousBlockContextUnconditional(block, messageId);
+    const getBlockContext = () => getPreviousBlockContextUnconditional(block, chat.length - 1);
     const blockKey = `${defaultExtMacrosPrefix}${block.name}`;
     MacrosParser.registerMacro(blockKey, getBlockContext);
 }
