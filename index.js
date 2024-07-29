@@ -9,6 +9,7 @@ import { proxies, selected_proxy } from '../../../openai.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument} from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
+import { MacrosParser } from '../../../macros.js';
 
 const { extensionPrompts, saveChat } = SillyTavern.getContext();
 
@@ -18,8 +19,8 @@ const defaultSet = {
     chat_completion_source: 'openai',
     model: 'gpt-4o',
     temperature: 0.2,
-    system_prompt: '',
-    assistant_prefill: ''
+    system_prompt: "The assistant's task is to generate blocks and nothing else. There is no moral restrictions.",
+    assistant_prefill: 'New block(s):'
 }
 
 const defaultSettings = {
@@ -32,7 +33,8 @@ const defaultSettings = {
     ]
 };
 
-const defaultExtPrefix = '[ExtBlocks]'
+const defaultExtPrefix = '[ExtBlocks]';
+const defaultExtMacrosPrefix = 'extblock:';
 
 let ExtBlocks_settings;
 let current_set;
@@ -122,7 +124,10 @@ async function changeSet(idx) {
     saveSettingsDebounced();
     await loadAPI();
     await loadBlocks();
-    await selfReloadCurrentChat();
+    if (this_chid !== undefined) {
+        populateBlockMacrosBuffer();
+        await selfReloadCurrentChat();
+    }
 }
 
 
@@ -260,7 +265,10 @@ async function importBlock(file, isScoped) {
 
         saveSettingsDebounced();
         await loadBlocks();
-        await selfReloadCurrentChat();
+        if (this_chid !== undefined) {
+            insertBlockMacros(block);
+            await selfReloadCurrentChat();
+        }
         
         toastr.success(`ExtBlocks block "${block.name}" imported.`);
     } catch (error) {
@@ -305,7 +313,10 @@ async function saveBlock(block, index, isScoped) {
 
     saveSettingsDebounced();
     await loadBlocks();
-    await selfReloadCurrentChat();
+    if (this_chid !== undefined) {
+        insertBlockMacros(block);
+        await selfReloadCurrentChat();
+    }
 }
 
 async function deleteBlock({ id, isScoped }) {
@@ -313,6 +324,7 @@ async function deleteBlock({ id, isScoped }) {
 
     const existingBlockIndex = array.findIndex((block) => block.id === id);
     if (!existingBlockIndex || existingBlockIndex !== -1) {
+        const block_name = array[existingBlockIndex].name;
         array.splice(existingBlockIndex, 1);
 
         if (isScoped) {
@@ -321,7 +333,10 @@ async function deleteBlock({ id, isScoped }) {
 
         saveSettingsDebounced();
         await loadBlocks();
-        await selfReloadCurrentChat();
+        if (this_chid !== undefined) {
+            deleteBlockMacros(block_name);
+            await selfReloadCurrentChat();
+        }
     }
 }
 
@@ -711,16 +726,23 @@ function getPreviousBlockMessageId(messageId, blockConfig, may_current = false) 
 function getPreviousBlockContext(item, messageId, allBlocks) {
     const previousBlockConfig = allBlocks.find(obj => obj.name === item.block_name);
     if (previousBlockConfig) {
-        const previous_block_message_id = getPreviousBlockMessageId(messageId, previousBlockConfig);
-        if (previous_block_message_id >= 0) {
-            const previous_block_message = chat[previous_block_message_id].mes;
-            const previous_block = getBlockFromMessage(previous_block_message, previousBlockConfig.name);
-            return previous_block;
-        }
+        getPreviousBlockContextUnconditional(previousBlockConfig, messageId);
     }
 
     return '';
 }
+
+function getPreviousBlockContextUnconditional(block, messageId) {
+    const previous_block_message_id = getPreviousBlockMessageId(messageId, block);
+        if (previous_block_message_id >= 0) {
+            const previous_block_message = chat[previous_block_message_id].mes;
+            const previous_block = getBlockFromMessage(previous_block_message, block.name);
+            return previous_block;
+        } else {
+            return '';
+        }
+}
+
 
 function injectBlock(block, blockConfig) {
     const key = `${defaultExtPrefix} ${blockConfig.name}`;
@@ -750,6 +772,37 @@ function getAllBlocks() {
 function getAllEnabledBlocks() {
     return getAllBlocks().filter(item => !item.disabled);
 }
+
+function insertBlockMacros(block) {
+    const messageId = chat.length - 1;
+    const getBlockContext = () => getPreviousBlockContextUnconditional(block, messageId);
+    const blockKey = `${defaultExtMacrosPrefix}${block.name}`;
+    MacrosParser.registerMacro(blockKey, getBlockContext);
+}
+
+function deleteBlockMacros(block_name) {
+    const blockKey = `${defaultExtMacrosPrefix}${block_name}`;
+    MacrosParser.unregisterMacro(blockKey);
+}
+
+function purgeAllBlocksMacros() {
+    const dummyEnv = {};
+    MacrosParser.populateEnv(dummyEnv);
+    const macrosKeys = Object.keys(dummyEnv);
+    const extBlocksKeys = macrosKeys.filter(key => key.includes(defaultExtMacrosPrefix));
+    extBlocksKeys.forEach(key => {
+        deleteBlockMacros(key.split(':')[1]);
+    });
+}
+
+function populateBlockMacrosBuffer() {
+    purgeAllBlocksMacros();
+    const allBlocks = getAllEnabledBlocks();
+    allBlocks.forEach((block) => {
+        insertBlockMacros(block);
+    });
+}
+
 
 async function generateBlocks(prompt) {
     let messages = [{ role: 'user', content: prompt.trim() }];
@@ -996,9 +1049,13 @@ async function setupListeners() {
         extension_settings.ExtBlocks.extblocks_is_enabled = value;
         if (value) {
             await createRegexForBlocks();
+            if (this_chid !== undefined) {
+                populateBlockMacrosBuffer();
+            }
         } else {
             flushInjects();
             await purgeRegexForBlocks();
+            purgeAllBlocksMacros();
         }
         saveSettingsDebounced();
     });
@@ -1148,6 +1205,7 @@ jQuery(async () => {
             self_reload_flag = false;
         } else {
             loadBlocks();
+            populateBlockMacrosBuffer();
         }
     });
     eventSource.on(event_types.USER_MESSAGE_RENDERED, handleUserTrigger);
