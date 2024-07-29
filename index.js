@@ -52,6 +52,8 @@ async function selfReloadCurrentChat() {
     }
 }
 
+let is_chat_modified = false;
+
 async function refreshSettings() {
     ExtBlocks_settings = extension_settings.ExtBlocks;
     current_set = ExtBlocks_settings.sets[ExtBlocks_settings.active_set_idx];
@@ -966,12 +968,15 @@ async function handleUserTrigger(messageId, is_swipe = false) {
         return;
     }
 
-    if (is_swipe) {
+    if (is_swipe && is_chat_modified) {
         chat[messageId].mes = runRegexScript(blocksPurgeScript, chat[messageId].mes);
         await saveChat();
-    }
+    } 
 
-    await handleMessageTrigger(messageId, true);
+    if ((!is_swipe) || (is_swipe && is_chat_modified)) {
+        is_chat_modified = false;
+        await handleMessageTrigger(messageId, true);
+    }
     flushInjects();
     const allBlocks = getAllEnabledBlocks();
     allBlocks.forEach(blockConfig => {
@@ -999,6 +1004,7 @@ async function handleCharTrigger(messageId) {
         return;
     }
 
+    is_chat_modified = false;
     await handleMessageTrigger(messageId, false);
 }
 
@@ -1054,7 +1060,7 @@ async function setupListeners() {
             }
         } else {
             flushInjects();
-            await purgeRegexForBlocks();
+            //await purgeRegexForBlocks();
             purgeAllBlocksMacros();
         }
         saveSettingsDebounced();
@@ -1200,14 +1206,17 @@ jQuery(async () => {
     $('#extensions_settings').append(await renderExtensionTemplateAsync(path, 'settings'));
     await loadSettings();
     await setupListeners();
-    eventSource.on(event_types.CHAT_CHANGED, () => {
+    eventSource.on(event_types.CHAT_CHANGED, async () => {
         if (self_reload_flag) {
             self_reload_flag = false;
         } else {
-            loadBlocks();
+            is_chat_modified = false;
+            await loadBlocks();
             populateBlockMacrosBuffer();
         }
     });
+    eventSource.on(event_types.MESSAGE_EDITED, () => is_chat_modified = true);
+    eventSource.on(event_types.MESSAGE_DELETED, () => is_chat_modified = true);
     eventSource.on(event_types.USER_MESSAGE_RENDERED, handleUserTrigger);
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleCharTrigger);
     eventSource.on(event_types.MESSAGE_SWIPED, async (messageId) => await handleUserTrigger(messageId -1, true));
