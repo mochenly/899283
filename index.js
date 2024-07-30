@@ -10,6 +10,7 @@ import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument} from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { MacrosParser } from '../../../macros.js';
+import { checkWorldInfo } from '../../../world-info.js';
 
 const { extensionPrompts, saveChat } = SillyTavern.getContext();
 
@@ -35,6 +36,7 @@ const defaultSettings = {
 
 const defaultExtPrefix = '[ExtBlocks]';
 const defaultExtMacrosPrefix = 'extblock:';
+const worldInfoMacrosNames = ['wiBefore', 'wiAfter', 'wiExamples', 'wiDepth', 'wiAll'];
 
 let ExtBlocks_settings;
 let current_set;
@@ -381,7 +383,7 @@ async function loadBlocks() {
         });
         blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
             const fileName = `${block.name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()} prompt.json`;
-            const fileData = JSON.stringify({fullPrompt: getSingleBlockFullPrompt(block)}, null, 4);
+            const fileData = JSON.stringify({fullPrompt: await checkWorldInfoMacros(getSingleBlockFullPrompt(block))}, null, 4);
             download(fileData, fileName, 'application/json');
         });
         blockHtml.find('.delete_ExtBlocks').on('click', async function () {
@@ -893,12 +895,54 @@ function getSingleBlockFullPrompt(block) {
     return `${blockContext}\n\n\n${blockTemplate}\n\n${blockPrompt}`;
 }
 
+
+async function checkWorldInfoMacros(prompt) {
+    const containsWorldInfoMacros = worldInfoMacrosNames.some(wiMacros => prompt.includes(wiMacros));
+    if (containsWorldInfoMacros) {
+        const promptChat = [ prompt ];
+        const maxContext = 2e5;
+        const activatedWorldInfo = await checkWorldInfo(promptChat, maxContext, true);
+        let worldInfoAll = [];
+        let worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+        if (worldInfoBefore !== '') {
+            worldInfoAll.push(worldInfoBefore);
+        }
+        let worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+        if (worldInfoAfter !== '') {
+            worldInfoAll.push(worldInfoAfter);
+        }
+        let worldInfoExamples = activatedWorldInfo.EMEntries ?? [];
+        if (worldInfoExamples.length !== 0) {
+            worldInfoExamples = worldInfoExamples.map(item => item.content).join('\n\n');
+            worldInfoAll.push(worldInfoExamples);
+        } else {
+            worldInfoExamples = '';
+        }
+        let worldInfoDepth = activatedWorldInfo.WIDepthEntries ?? [];
+        if (worldInfoDepth.length !== 0) {
+            worldInfoDepth = worldInfoDepth.map(item => item.entries.join('\n')).join('\n\n');
+            worldInfoAll.push(worldInfoDepth);
+        } else {
+            worldInfoDepth = '';
+        }
+        worldInfoAll = worldInfoAll.join('\n\n');
+
+        prompt = prompt.replace(/{{wiBefore}}/gi, worldInfoBefore);
+        prompt = prompt.replace(/{{wiAfter}}/gi, worldInfoAfter);
+        prompt = prompt.replace(/{{wiExamples}}/gi, worldInfoExamples);
+        prompt = prompt.replace(/{{wiDepth}}/gi, worldInfoDepth);
+        prompt = prompt.replace(/{{wiAll}}/gi, worldInfoAll);
+    }
+
+    return prompt;
+}
+
 async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}, is_separate = false) {
     const groupedBlocks = groupBlocksByContext(triggeredBlocks);
 
     const prompts = [];
 
-    Object.entries(groupedBlocks).forEach(([context, blocks]) => {
+    Object.entries(groupedBlocks).forEach(async ([context, blocks]) => {
         let combinedContext = '';
         let combinedTemplate = `Block(s) template:\n${blocks.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
         let combinedPrompt = `Block(s) prompt:\n${blocks.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
@@ -909,6 +953,7 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
         };
         
         const fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
+        fullPrompt = await checkWorldInfoMacros(fullPrompt);
         prompts.push(fullPrompt);
     });
     if (prompts.length > 0) {
