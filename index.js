@@ -942,7 +942,8 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
 
     const prompts = [];
 
-    Object.entries(groupedBlocks).forEach(async ([context, blocks]) => {
+    for (let context in groupedBlocks) {
+        const blocks = groupedBlocks[context];
         let combinedContext = '';
         let combinedTemplate = `Block(s) template:\n${blocks.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
         let combinedPrompt = `Block(s) prompt:\n${blocks.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
@@ -955,7 +956,8 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
         let fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
         fullPrompt = await checkWorldInfoMacros(fullPrompt);
         prompts.push(fullPrompt);
-    });
+    }
+    
     if (prompts.length > 0) {
         toastr.info(`${defaultExtPrefix} Generating, please wait...`);
         for (let idx = 0; idx < prompts.length; idx++) {
