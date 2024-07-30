@@ -952,7 +952,7 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
             combinedContext = getBlockCombinedContext(block, messageId, allBlocks, additionalMacro);
         };
         
-        const fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
+        let fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
         fullPrompt = await checkWorldInfoMacros(fullPrompt);
         prompts.push(fullPrompt);
     });
