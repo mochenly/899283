@@ -1,6 +1,6 @@
 import { saveSettingsDebounced, substituteParamsExtended, setExtensionPrompt, callPopup,
     reloadCurrentChat, this_chid, characters, eventSource, event_types, chat, getRequestHeaders,
-    addOneMessage, system_message_types, system_avatar } from '../../../../script.js';
+    addOneMessage, system_message_types, system_avatar, updateMessageBlock } from '../../../../script.js';
 import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { getRegexedString, runRegexScript } from '../../../extensions/regex/engine.js'
@@ -965,6 +965,7 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
             const blocks = extractMessageFromData(blocksData);
             if (!is_separate) {
                 chat[messageId].mes = `${chat[messageId].mes}\n${blocks}`;
+                updateMessageBlock(messageId, chat[messageId]);
             } else {
                 const message = {
                     name: 'System',
@@ -988,9 +989,6 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
             await saveChat();
         }
         toastr.success(`${defaultExtPrefix} Done!`);
-        if (!isUser && !is_separate) {
-            await selfReloadCurrentChat();
-        }
     }
 }
 
@@ -1016,6 +1014,7 @@ async function handleUserTrigger(messageId, is_swipe = false) {
 
     if (is_swipe && is_chat_modified) {
         chat[messageId].mes = runRegexScript(blocksPurgeScript, chat[messageId].mes);
+        updateMessageBlock(messageId, chat[messageId]);
         await saveChat();
     } 
 
@@ -1088,8 +1087,8 @@ async function runBlockRegenerationCallback() {
     }
     const isUser = chat[messageId].is_user;
     chat[messageId].mes = runRegexScript(blocksPurgeScript, chat[messageId].mes);
+    updateMessageBlock(messageId, chat[messageId]);
     await saveChat();
-    await reloadCurrentChat();
 
     await handleMessageTrigger(messageId, isUser);
     return '';
@@ -1252,7 +1251,7 @@ jQuery(async () => {
     $('#extensions_settings').append(await renderExtensionTemplateAsync(path, 'settings'));
     await loadSettings();
     await setupListeners();
-    eventSource.on(event_types.CHAT_CHANGED, async () => {
+    eventSource.makeFirst(event_types.CHAT_CHANGED, async () => {
         if (self_reload_flag) {
             self_reload_flag = false;
         } else {
