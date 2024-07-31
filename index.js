@@ -925,7 +925,7 @@ async function generateBlocks(prompt) {
 }
 
 function extractMessageFromData(data) {
-    if (current_set.chat_completion_source === 'openai') {
+    if (current_set.chat_completion_source === 'openai' || current_set.chat_completion_source === 'mistralai') {
         return data.choices[0].message.content.trim();
     } else if (current_set.chat_completion_source === 'claude') {
         return data.content[0].text.trim();
