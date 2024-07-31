@@ -3,7 +3,7 @@ import { saveSettingsDebounced, substituteParamsExtended, setExtensionPrompt, ca
     addOneMessage, system_message_types, system_avatar, updateMessageBlock } from '../../../../script.js';
 import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
-import { getRegexedString, runRegexScript } from '../../../extensions/regex/engine.js'
+import { getRegexedString } from '../../../extensions/regex/engine.js'
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../../utils.js';
 import { proxies, selected_proxy } from '../../../openai.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
@@ -12,7 +12,7 @@ import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.j
 import { MacrosParser } from '../../../macros.js';
 import { checkWorldInfo } from '../../../world-info.js';
 
-const { extensionPrompts, saveChat } = SillyTavern.getContext();
+const { saveChat } = SillyTavern.getContext();
 
 const defaultSet = {
     name: 'Default',
@@ -40,15 +40,14 @@ const worldInfoMacrosNames = ['wiBefore', 'wiAfter', 'wiExamples', 'wiDepth', 'w
 
 let ExtBlocks_settings;
 let current_set;
-let blocksPurgeScript;
-let spoilerScript;
+let spoilerRegex;
 
 const path = 'third-party/extblocks';
 const templates_path = path + '/templates';
 
 let self_reload_flag = false;
-async function selfReloadCurrentChat() {
-    if (this_chid !== undefined && extension_settings.ExtBlocks.extblocks_is_enabled) {
+async function selfReloadCurrentChat(forceReload = false) {
+    if (this_chid !== undefined && (extension_settings.ExtBlocks.extblocks_is_enabled || forceReload)) {
         self_reload_flag = true;
         await reloadCurrentChat();
     }
@@ -130,7 +129,6 @@ async function changeSet(idx) {
     await loadBlocks();
     if (this_chid !== undefined) {
         populateBlockMacrosBuffer();
-        await selfReloadCurrentChat();
     }
 }
 
@@ -162,75 +160,155 @@ async function importSet(file) {
 }
 
 
-async function purgeRegexForBlocks() {
-    extension_settings.regex = extension_settings.regex.filter(item => !item.scriptName.includes(defaultExtPrefix));
-    saveSettingsDebounced();
-    await selfReloadCurrentChat();
-}
-
-async function createRegexForBlocks() {
-    let names = [];
+async function createRegexForBlocks(forceReload = false) {
     let spoiler_names = [];
 
-    current_set.global_blocks.forEach((block, index, array) => {
-        names.push(block.name);
+    current_set.global_blocks.forEach((block) => {
         if (block.hide_display) {
             spoiler_names.push(block.name);
         }
     });
-    characters[this_chid]?.data?.extensions?.ExtBlocks?.forEach((block, index, array) => {
-        names.push(block.name);
+    characters[this_chid]?.data?.extensions?.ExtBlocks?.forEach((block) => {
         if (block.hide_display) {
             spoiler_names.push(block.name);
         }
     });
 
-    if (names.length == 0) {
-        return
-    };
-    extension_settings.regex = extension_settings.regex.filter(item => !item.scriptName.includes(defaultExtPrefix));
-
-    blocksPurgeScript = {
-        id: uuidv4(),
-        scriptName: `${defaultExtPrefix} Blocks purge`,
-        findRegex: `/${names.map(name => `(\\n*<${name}>[\\s\\S]*?<\\/${name}>\\n*)`).join('|')}/g`,
-        replaceString: '',
-        trimStrings: [],
-        placement: [1, 2],
-        disabled: false,
-        markdownOnly: false,
-        promptOnly: true,
-        runOnEdit: true,
-        substituteRegex: false,
-        minDepth: null,
-        maxDepth: null,
-    };
-    
-    extension_settings.regex.push(blocksPurgeScript);
+    let shouldReload = false;
 
     if (spoiler_names.length != 0) {
-        spoilerScript = {
-            id: uuidv4(),
-            scriptName: `${defaultExtPrefix} Spoiler`,
-            findRegex: `/${spoiler_names.map(name => `(\\n*<${name}>[\\s\\S]*?<\\/${name}>\\n*)`).join('|')}/g`,
-            replaceString: '',
-            trimStrings: [],
-            placement: [1, 2],
-            disabled: false,
-            markdownOnly: true,
-            promptOnly: false,
-            runOnEdit: true,
-            substituteRegex: false,
-            minDepth: null,
-            maxDepth: null,
-        };
-        extension_settings.regex.push(spoilerScript);
+        let oldRegexSource;
+        const newRegexSource = `${spoiler_names.map(name => `(\\n*<${name}>[\\s\\S]*?<\\/${name}>\\n*)`).join('|')}`;
+        if (spoilerRegex !== undefined) {
+            oldRegexSource = spoilerRegex.source;
+            if (oldRegexSource !== newRegexSource) {
+                shouldReload = true;
+            }
+        } else {
+            shouldReload = true;
+        }
+        spoilerRegex = new RegExp(newRegexSource, "g");
     }
 
-    saveSettingsDebounced();
-    await selfReloadCurrentChat();
+    if ((forceReload || shouldReload) && this_chid !== undefined) {
+        await updateAllBlocksDisplayText();
+        await selfReloadCurrentChat();
+    }
 
 }
+
+function updateBlocksDisplayText(messageId) {
+    if (chat[messageId].extra === undefined) {
+        return;
+    }
+
+    if (chat[messageId].extra.extblocks === undefined || chat[messageId].extra.extblocks === '') {
+        if (chat[messageId].extra.display_text) {
+            delete chat[messageId].extra.display_text;
+        }
+    } else {
+        chat[messageId].extra.display_text = chat[messageId].mes + `\n${chat[messageId].extra.extblocks.replaceAll(spoilerRegex, '')}`;
+    }
+}
+
+async function updateAllBlocksDisplayText() {
+    for (let messageId = 0; messageId < chat.length; messageId++) {
+        updateBlocksDisplayText(messageId);
+    }
+
+    await saveChat();
+}
+
+function purgeBlocksDisplayText(messageId) {
+    if (chat[messageId].extra === undefined) {
+        return;
+    }
+
+    if (chat[messageId].extra.display_text) {
+        delete chat[messageId].extra.display_text;
+    }
+
+}
+
+async function purgeAllBlocksDisplayText() {
+    for (let messageId = 0; messageId < chat.length; messageId++) {
+        purgeBlocksDisplayText(messageId);
+    }
+
+    await saveChat();
+}
+
+async function updateBlocksDisplay(messageId) {
+    updateBlocksDisplayText(messageId);
+    updateMessageBlock(messageId, chat[messageId]);
+    await saveChat();
+}
+
+async function addBlocksToExtra(messageId, blocksStr) {
+    if (chat[messageId].extra === undefined) {
+        chat[messageId].extra = {};
+    }
+
+    if (chat[messageId].extra.extblocks === undefined || chat[messageId].extra.extblocks === '') {
+        chat[messageId].extra.extblocks = blocksStr;
+
+    } else {
+        chat[messageId].extra.extblocks += `\n${blocksStr}`;
+    }
+
+    if (chat[messageId].swipe_id) {
+        const current_swipe_id = chat[messageId].swipe_id;
+
+        if (chat[messageId].swipe_info[current_swipe_id].extra === undefined) {
+            chat[messageId].swipe_info[current_swipe_id].extra = {};
+        }
+    
+        if (chat[messageId].swipe_info[current_swipe_id].extra.extblocks === undefined || chat[messageId].swipe_info[current_swipe_id].extra.extblocks === '') {
+            chat[messageId].swipe_info[current_swipe_id].extra.extblocks = blocksStr;
+    
+        } else {
+            chat[messageId].swipe_info[current_swipe_id].extra.extblocks += `\n${blocksStr}`;
+        }
+    }
+
+    await updateBlocksDisplay(messageId);
+}
+
+async function purgeBlocksExtra(messageId, no_update = false) {
+    if (chat[messageId].extra === undefined) {
+        return;
+    }
+
+    if (chat[messageId].extra.extblocks) {
+        chat[messageId].extra.extblocks = '';
+    }
+
+    if (chat[messageId].swipe_id) {
+        const current_swipe_id = chat[messageId].swipe_id;
+        if (chat[messageId].swipe_info[current_swipe_id] && chat[messageId].swipe_info[current_swipe_id].extra) {
+            if (chat[messageId].swipe_info[current_swipe_id].extra.extblocks) {
+                chat[messageId].swipe_info[current_swipe_id].extra.extblocks = '';
+            }
+        }
+    }
+
+    if (!no_update) {
+        await updateBlocksDisplay(messageId);
+    }
+}
+
+async function swipeBlockExtra(messageId, swipeId) {
+    chat[messageId].extra.extblocks = JSON.parse(JSON.stringify(chat[messageId].swipe_info[swipeId].extra.extblocks))
+
+    await updateBlocksDisplay(messageId);
+}
+
+function firstSwipeBlockExtra(messageId) {
+    if (chat[messageId].extra.extblocks) {
+        chat[messageId].swipe_info[0].extra.extblocks = JSON.parse(JSON.stringify(chat[messageId].extra.extblocks));
+    }
+}
+
 
 async function importBlock(file, isScoped) {
     if (!file) {
@@ -271,7 +349,6 @@ async function importBlock(file, isScoped) {
         await loadBlocks();
         if (this_chid !== undefined) {
             insertBlockMacros(block);
-            await selfReloadCurrentChat();
         }
         
         toastr.success(`ExtBlocks block "${block.name}" imported.`);
@@ -319,7 +396,6 @@ async function saveBlock(block, index, isScoped) {
     await loadBlocks();
     if (this_chid !== undefined) {
         insertBlockMacros(block);
-        await selfReloadCurrentChat();
     }
 }
 
@@ -339,7 +415,6 @@ async function deleteBlock({ id, isScoped }) {
         await loadBlocks();
         if (this_chid !== undefined) {
             deleteBlockMacros(block_name);
-            await selfReloadCurrentChat();
         }
     }
 }
@@ -618,12 +693,12 @@ async function openEditor(existingId, isScoped) {
             prompt: String(editorHtml.find('.ExtBlocks-editor-block-prompt').val()),
             user_message: editorHtml.find('input[name="user_message"]').prop('checked'),
             char_message: editorHtml.find('input[name="char_message"]').prop('checked'),
-            period: parseInt(String(editorHtml.find('input[name="period"]').val())) || 2,
+            period: parseInt(String(editorHtml.find('input[name="period"]').val() || 2)),
             hide_display: editorHtml.find('input[name="hide_display"]').prop('checked'),
             inject_block: editorHtml.find('input[name="inject_block"]').prop('checked'),
             injection_role: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-role"]`).val())),
             injection_position: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-position"]`).val())),
-            injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val())) || 4,
+            injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val() || 4)),
             context: contextItems
         };
 
@@ -736,15 +811,20 @@ function getPreviousBlockContext(item, messageId, allBlocks) {
     return '';
 }
 
-function getPreviousBlockContextUnconditional(block, messageId) {
-    const previous_block_message_id = getPreviousBlockMessageId(messageId, block);
+function getPreviousBlockContextUnconditional(block, messageId, may_current = false) {
+    const previous_block_message_id = getPreviousBlockMessageId(messageId, block, may_current);
     if (previous_block_message_id >= 0) {
-        const previous_block_message = chat[previous_block_message_id].mes;
-        const previous_block = getBlockFromMessage(previous_block_message, block.name);
-        return previous_block;
-    } else {
-        return '';
+        if (chat[previous_block_message_id].extra && chat[previous_block_message_id].extra.extblocks) {
+            const previous_block_message = chat[previous_block_message_id].extra.extblocks;
+            const previous_block = getBlockFromMessage(previous_block_message, block.name);
+            if (previous_block === '' && may_current) {
+                return getPreviousBlockContextUnconditional(block, messageId);
+            } else {
+                return previous_block;
+            }
+        }
     }
+    return '';
 }
 
 
@@ -759,26 +839,18 @@ function injectBlock(block, blockConfig) {
     setExtensionPrompt(key, block, position, depth, true, role);
 }
 
-function flushInjects() {
-    for (const key of Object.keys(extensionPrompts)) {
-        if (key.startsWith(defaultExtPrefix)) {
-            delete extensionPrompts[key];
-        }
-    }
-    return '';
-}
-
 function getAllBlocks() {
     const embeddedBlocks = characters[this_chid]?.data?.extensions?.ExtBlocks ?? [];
     return priorityCombineBlocks(current_set.global_blocks, embeddedBlocks);
 }
 
 function getAllEnabledBlocks() {
-    return getAllBlocks().filter(item => !item.disabled);
+    const allBlocks = getAllBlocks();
+    return allBlocks.filter(item => !item.disabled);
 }
 
 function insertBlockMacros(block) {
-    const getBlockContext = () => getPreviousBlockContextUnconditional(block, chat.length - 1);
+    const getBlockContext = () => getPreviousBlockContextUnconditional(block, chat.length - 1, true);
     const blockKey = `${defaultExtMacrosPrefix}${block.name}`;
     MacrosParser.registerMacro(blockKey, getBlockContext);
 }
@@ -964,8 +1036,7 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
             const blocksData = await generateBlocks(prompts[idx]);
             const blocks = extractMessageFromData(blocksData);
             if (!is_separate) {
-                chat[messageId].mes = `${chat[messageId].mes}\n${blocks}`;
-                updateMessageBlock(messageId, chat[messageId]);
+                await addBlocksToExtra(messageId, blocks);
             } else {
                 const message = {
                     name: 'System',
@@ -985,8 +1056,8 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
                 await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
                 addOneMessage(message);
                 await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+                await saveChat();
             };
-            await saveChat();
         }
         toastr.success(`${defaultExtPrefix} Done!`);
     }
@@ -1011,26 +1082,24 @@ async function handleUserTrigger(messageId, is_swipe = false) {
     if (chat[messageId].is_system) {
         return;
     }
-
-    if (is_swipe && is_chat_modified) {
-        chat[messageId].mes = runRegexScript(blocksPurgeScript, chat[messageId].mes);
-        updateMessageBlock(messageId, chat[messageId]);
-        await saveChat();
-    } 
+    if (!is_swipe) {
+        await purgeBlocksExtra(messageId, true);
+    }
 
     if ((!is_swipe) || (is_swipe && is_chat_modified)) {
         is_chat_modified = false;
         await handleMessageTrigger(messageId, true);
     }
-    flushInjects();
     const allBlocks = getAllEnabledBlocks();
     allBlocks.forEach(blockConfig => {
         if (blockConfig.inject_block) {
             const mes_id = getPreviousBlockMessageId(messageId, blockConfig, true);
             if (mes_id >= 0) {
-                const previous_block_message = chat[mes_id].mes;
-                const previous_block = getBlockFromMessage(previous_block_message, blockConfig.name);
-                injectBlock(previous_block, blockConfig);
+                if (chat[mes_id].extra && chat[mes_id].extra.extblocks) {
+                    const previous_block_message = chat[mes_id].extra.extblocks;
+                    const previous_block = getBlockFromMessage(previous_block_message, blockConfig.name);
+                    injectBlock(previous_block, blockConfig);
+                }
             }
         }
     });
@@ -1049,8 +1118,11 @@ async function handleCharTrigger(messageId) {
         return;
     }
 
+    await purgeBlocksExtra(messageId, true);
+
     is_chat_modified = false;
     await handleMessageTrigger(messageId, false);
+    await selfReloadCurrentChat();
 }
 
 async function runBlockGenerationCallback(args, additional_prompt) {
@@ -1086,9 +1158,8 @@ async function runBlockRegenerationCallback() {
         return;
     }
     const isUser = chat[messageId].is_user;
-    chat[messageId].mes = runRegexScript(blocksPurgeScript, chat[messageId].mes);
-    updateMessageBlock(messageId, chat[messageId]);
-    await saveChat();
+
+    await purgeBlocksExtra(messageId);
 
     await handleMessageTrigger(messageId, isUser);
     return '';
@@ -1099,14 +1170,14 @@ async function setupListeners() {
         const value = $('#extblocks_is_enabled').prop('checked');
         extension_settings.ExtBlocks.extblocks_is_enabled = value;
         if (value) {
-            await createRegexForBlocks();
+            await createRegexForBlocks(true);
             if (this_chid !== undefined) {
                 populateBlockMacrosBuffer();
             }
         } else {
-            flushInjects();
-            //await purgeRegexForBlocks();
             purgeAllBlocksMacros();
+            await purgeAllBlocksDisplayText();
+            await selfReloadCurrentChat(true);
         }
         saveSettingsDebounced();
     });
@@ -1252,6 +1323,14 @@ jQuery(async () => {
     await loadSettings();
     await setupListeners();
     eventSource.makeFirst(event_types.CHAT_CHANGED, async () => {
+        if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
+            return;
+        }
+
+        if (this_chid === undefined) {
+            return;
+        }
+
         if (self_reload_flag) {
             self_reload_flag = false;
         } else {
@@ -1260,11 +1339,29 @@ jQuery(async () => {
             populateBlockMacrosBuffer();
         }
     });
-    eventSource.on(event_types.MESSAGE_EDITED, () => is_chat_modified = true);
+    eventSource.makeFirst(event_types.MESSAGE_EDITED, () => {
+        is_chat_modified = true;
+    });
+    eventSource.makeFirst(event_types.MESSAGE_UPDATED, (messageId) => {
+        if (extension_settings.ExtBlocks.extblocks_is_enabled) {
+            updateBlocksDisplay(messageId);
+        }
+    });
     eventSource.on(event_types.MESSAGE_DELETED, () => is_chat_modified = true);
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, handleUserTrigger);
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleCharTrigger);
-    eventSource.on(event_types.MESSAGE_SWIPED, async (messageId) => await handleUserTrigger(messageId -1, true));
+    eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, handleUserTrigger);
+    eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, handleCharTrigger);
+    eventSource.makeFirst(event_types.MESSAGE_SWIPED, async (messageId) => {
+        const current_swipe_id = chat[messageId].swipe_id;
+        if (current_swipe_id === chat[messageId].swipes.length) {
+            if (current_swipe_id == 1) {
+                firstSwipeBlockExtra(messageId);
+            }
+            await purgeBlocksExtra(messageId - 1, true);
+            await handleUserTrigger(messageId - 1, true);
+        } else {
+            await swipeBlockExtra(messageId, current_swipe_id);
+        }
+    });
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'extblocks-generate',
         callback: runBlockGenerationCallback,
@@ -1300,7 +1397,7 @@ jQuery(async () => {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'extblocks-flushinjects',
-        callback: flushInjects,
+        callback: async () => await selfReloadCurrentChat(),
         returns: 'void',
         helpString: 'Flushes ExtBlocks injects.',
     }));

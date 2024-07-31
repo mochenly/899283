@@ -6,7 +6,7 @@
     "js": "index.js",
     "css": "styles.css",
     "author": "Monblant",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "homePage": "https://gitgud.io/Monblant/extblocks",
     "auto_update": true
 }
