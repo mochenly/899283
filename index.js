@@ -5,7 +5,7 @@ import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { getRegexedString } from '../../../extensions/regex/engine.js'
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../../utils.js';
-import { proxies, selected_proxy } from '../../../openai.js';
+import { proxies, selected_proxy, oai_settings, setupChatCompletionPromptManager } from '../../../openai.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument} from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
@@ -36,7 +36,8 @@ const defaultSettings = {
 
 const defaultExtPrefix = '[ExtBlocks]';
 const defaultExtMacrosPrefix = 'extblock:';
-const worldInfoMacrosNames = ['wiBefore', 'wiAfter', 'wiExamples', 'wiDepth', 'wiAll'];
+const worldInfoMacrosNames = ['{{wiBefore}}', '{{wiAfter}}', '{{wiExamples}}', '{{wiDepth}}', '{{wiAll}}'];
+const mainPromptMacros = '{{mainPrompt}}';
 
 let ExtBlocks_settings;
 let current_set;
@@ -458,7 +459,7 @@ async function loadBlocks() {
         });
         blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
             const fileName = `${block.name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()} prompt.json`;
-            const fileData = JSON.stringify({fullPrompt: await checkWorldInfoMacros(getSingleBlockFullPrompt(block))}, null, 4);
+            const fileData = JSON.stringify({fullPrompt: await checkAllMacros(getSingleBlockFullPrompt(block))}, null, 4);
             download(fileData, fileName, 'application/json');
         });
         blockHtml.find('.delete_ExtBlocks').on('click', async function () {
@@ -970,7 +971,7 @@ function getSingleBlockFullPrompt(block) {
 
 async function checkWorldInfoMacros(prompt) {
     const containsWorldInfoMacros = worldInfoMacrosNames.some(wiMacros => prompt.includes(wiMacros));
-    if (containsWorldInfoMacros) {
+    if (containsWorldInfoMacros && this_chid !== undefined) {
         const promptChat = [ prompt ];
         const maxContext = 2e5;
         const activatedWorldInfo = await checkWorldInfo(promptChat, maxContext, true);
@@ -1009,6 +1010,28 @@ async function checkWorldInfoMacros(prompt) {
     return prompt;
 }
 
+function checkMainPromptMacros(prompt) {
+    if (prompt.includes(mainPromptMacros)) {
+        const promptCollection = setupChatCompletionPromptManager(oai_settings).getPromptCollection();
+        let mainPrompt = promptCollection.collection.find(prompt => prompt.identifier === 'main');
+        if (mainPrompt) {
+            mainPrompt = mainPrompt.content;
+        } else {
+            mainPrompt = '';
+        }
+
+        prompt = prompt.replace(/{{mainPrompt}}/gi, mainPrompt);
+    }
+
+    return prompt;
+}
+
+async function checkAllMacros(prompt) {
+    prompt = await checkWorldInfoMacros(prompt);
+    prompt = checkMainPromptMacros(prompt);
+    return prompt;
+}
+
 async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}, is_separate = false) {
     const groupedBlocks = groupBlocksByContext(triggeredBlocks);
 
@@ -1026,7 +1049,7 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
         };
         
         let fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
-        fullPrompt = await checkWorldInfoMacros(fullPrompt);
+        fullPrompt = await checkAllMacros(fullPrompt);
         prompts.push(fullPrompt);
     }
     
@@ -1175,9 +1198,11 @@ async function setupListeners() {
                 populateBlockMacrosBuffer();
             }
         } else {
-            purgeAllBlocksMacros();
-            await purgeAllBlocksDisplayText();
-            await selfReloadCurrentChat(true);
+            if (this_chid !== undefined) {
+                purgeAllBlocksMacros();
+                await purgeAllBlocksDisplayText();
+                await selfReloadCurrentChat(true);
+            }
         }
         saveSettingsDebounced();
     });
