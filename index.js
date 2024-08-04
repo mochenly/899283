@@ -740,7 +740,7 @@ async function openEditor(existingId, isScoped) {
     const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save', wide: true});
     if (popupResult) {
         const trigger_periodicity = editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val();
-        const block_keyword = trigger_periodicity === keyword ? String(editorHtml.find('input[name="keyword"]').val() || '') : '';
+        const block_keyword = trigger_periodicity === 'keyword' ? String(editorHtml.find('input[name="keyword"]').val() || '') : '';
         const newBlock = {
             id: existingId ? String(existingId) : uuidv4(),
             name: String(editorHtml.find('.ExtBlocks-editor-block-name').val()),
@@ -1448,7 +1448,6 @@ jQuery(async () => {
             is_chat_modified = false;
             await loadBlocks();
             populateBlockMacrosBuffer();
-            console.log(chat[chat.length - 1]);
         }
     });
     eventSource.makeFirst(event_types.MESSAGE_EDITED, () => {
