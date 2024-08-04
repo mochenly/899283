@@ -581,6 +581,16 @@ async function openEditor(existingId, isScoped) {
         const fileData = JSON.stringify({items: contextItems}, null, 4);
         download(fileData, fileName, 'application/json');
     });
+
+    function changeTriggerPeriodicity(trigger_periodicity) {
+        if (trigger_periodicity === "keyword") {
+            editorHtml.find('.Extblocks-editor-period-wrapper').hide();
+            editorHtml.find('.Extblocks-editor-keyword-wrapper').show();
+        } else {
+            editorHtml.find('.Extblocks-editor-period-wrapper').show();
+            editorHtml.find('.Extblocks-editor-keyword-wrapper').hide();
+        }
+    }
     
     let existingBlockIndex = -1;
     if (existingId) {
@@ -599,8 +609,14 @@ async function openEditor(existingId, isScoped) {
 
             editorHtml.find('input[name="user_message"]').prop('checked', existingBlock.user_message ?? false);
             editorHtml.find('input[name="char_message"]').prop('checked', existingBlock.char_message ?? true);
-            editorHtml.find('input[name="period"]').val(existingBlock.period ?? 2);
 
+            const block_keyword = existingBlock.keyword;
+            const trigger_periodicity = (block_keyword && block_keyword !== '') ? "keyword" : "periodic";
+            editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val(trigger_periodicity);
+            editorHtml.find('input[name="period"]').val(existingBlock.period ?? 2);
+            editorHtml.find('input[name="keyword"]').val(block_keyword ?? '');
+            changeTriggerPeriodicity(trigger_periodicity);
+            
             editorHtml.find('input[name="hide_display"]').prop('checked', existingBlock.hide_display ?? false);
             editorHtml.find('input[name="inject_block"]').prop('checked', existingBlock.inject_block ?? false);
             editorHtml.find('input[name="disabled"]').prop('checked', existingBlock.disabled ?? false);
@@ -613,7 +629,14 @@ async function openEditor(existingId, isScoped) {
     } else {
         editorHtml.find('input[name="disabled"]').prop('checked', false);
         editorHtml.find('input[name="char_message"]').prop('checked', true);
+        editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val('periodic');
+        changeTriggerPeriodicity('periodic');
     }
+
+    editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).off('click').on('change', (event) => {
+        const value = editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val();
+        changeTriggerPeriodicity(value);
+    });
 
     let sortableContextItems = [
         {
@@ -627,17 +650,25 @@ async function openEditor(existingId, isScoped) {
     editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).off('click').on('change', (event) => {
         const value = editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).val();
         if (value === 'text') {
+            editorHtml.find('#ExtBlocks-editor-context-builder-keywordmessages').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-messages').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-block').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-text').show()
         } else if (value === 'last_messages') {
+            editorHtml.find('#ExtBlocks-editor-context-builder-keywordmessages').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-text').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-block').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-messages').show()
         } else if (value === 'previous_block') {
+            editorHtml.find('#ExtBlocks-editor-context-builder-keywordmessages').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-messages').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-text').hide()
             editorHtml.find('#ExtBlocks-editor-context-builder-block').show()
+        } else if (value === 'last_messages_keyword') {
+            editorHtml.find('#ExtBlocks-editor-context-builder-messages').hide()
+            editorHtml.find('#ExtBlocks-editor-context-builder-text').hide()
+            editorHtml.find('#ExtBlocks-editor-context-builder-block').hide()
+            editorHtml.find('#ExtBlocks-editor-context-builder-keywordmessages').show()
         }
     });
 
@@ -665,6 +696,18 @@ async function openEditor(existingId, isScoped) {
                 char_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charprefix').val()).replace(/\\n/g, '\n'),
                 char_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charsuffix').val()).replace(/\\n/g, '\n')
             };
+        } else if (context_type === 'last_messages_keyword') {
+            context_item = {
+                id: id,
+                name: name,
+                type: context_type,
+                keyword_stopper: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-keywordstopper').val()) || '',
+                messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val()),
+                user_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val()).replace(/\\n/g, '\n'),
+                user_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val()).replace(/\\n/g, '\n'),
+                char_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charprefix').val()).replace(/\\n/g, '\n'),
+                char_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charsuffix').val()).replace(/\\n/g, '\n')
+            };
         } else if (context_type === 'previous_block') {
             context_item = {
                 id: id,
@@ -686,6 +729,8 @@ async function openEditor(existingId, isScoped) {
 
     const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save', wide: true});
     if (popupResult) {
+        const trigger_periodicity = editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val();
+        const block_keyword = trigger_periodicity === keyword ? String(editorHtml.find('input[name="keyword"]').val() || '') : '';
         const newBlock = {
             id: existingId ? String(existingId) : uuidv4(),
             name: String(editorHtml.find('.ExtBlocks-editor-block-name').val()),
@@ -695,6 +740,7 @@ async function openEditor(existingId, isScoped) {
             user_message: editorHtml.find('input[name="user_message"]').prop('checked'),
             char_message: editorHtml.find('input[name="char_message"]').prop('checked'),
             period: parseInt(String(editorHtml.find('input[name="period"]').val() || 2)),
+            keyword: block_keyword,
             hide_display: editorHtml.find('input[name="hide_display"]').prop('checked'),
             inject_block: editorHtml.find('input[name="inject_block"]').prop('checked'),
             injection_role: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-role"]`).val())),
@@ -739,11 +785,23 @@ function priorityCombineBlocks(globalBlocks, scopedBlocks) {
 
 function getLastMessagesContext(item) {
     let lastMessages;
-    const messages_count = item.messages_count;
+    let messages_count = item.messages_count;
+    if (messages_count === undefined) {
+        const keyword_stopper = item.keyword_stopper;
+        if (keyword_stopper && keyword_stopper !== '') {
+            const lastMessageId = chat.slice(0, -1).findLastIndex(message => message.mes.includes(keyword_stopper));
+            if (lastMessageId == -1) {
+                lastMessageId = 0;
+            }
+            messages_count = chat.length - lastMessageId;
+        } else {
+            return '';
+        }
+    }
     if (messages_count > 0) {
-        lastMessages = chat.slice(-item.messages_count);
+        lastMessages = chat.slice(-messages_count);
     } else if (messages_count < 0) {
-        lastMessages = chat.slice(0, -item.messages_count);
+        lastMessages = chat.slice(0, -messages_count);
     } else {
         return '';
     }
@@ -762,7 +820,7 @@ function getLastMessagesContext(item) {
         let suffix = is_user_message ? item.user_suffix : item.char_suffix;
         suffix = substituteParamsExtended(suffix);
         const placement = is_user_message ? 1 : 2;
-        const depth = item.messages_count - index - 1;
+        const depth = messages_count - index - 1;
         return `${prefix}${getRegexedString(message.mes, placement, {depth: depth, isPrompt: true})}${suffix}`;
     }).join(separator);
 
@@ -774,30 +832,41 @@ function getBlockRegex(block_name) {
     return block_regex;
 }
 
-function getBlockFromMessage(message, block_name) {
-    let block_regex = getBlockRegex(block_name);
+function getBlockFromMessageWithRegex(message, block_regex) {
     const block = message.replace(block_regex, '');
     return block;
 }
 
+function getBlockFromMessage(message, block_name) {
+    const block_regex = getBlockRegex(block_name);
+    return getBlockFromMessageWithRegex(message, block_regex);
+}
+
 function getPreviousBlockMessageId(messageId, blockConfig, may_current = false) {
-    const block_period = blockConfig.period;
-    const offset = may_current ? 0 : 1;
+    const block_keyword = blockConfig.keyword;
     let previous_block_message_id;
-    if (blockConfig.user_message && blockConfig.char_message) {
-        previous_block_message_id = messageId - offset - ((messageId - offset) % block_period);
-    } else if (blockConfig.user_message) {
-        previous_block_message_id = messageId - offset - ((messageId - 1 - offset) % block_period);
-        if (previous_block_message_id % 2 != 1) {
-            previous_block_message_id -= block_period;
-        }
-    } else if (blockConfig.char_message) {
-        previous_block_message_id = messageId - offset - ((messageId - offset) % block_period);
-        if (previous_block_message_id % 2 != 0) {
-            previous_block_message_id -= block_period;
-        }
+    if (block_keyword && block_keyword !== '') {
+        const block_regex = getBlockRegex(blockConfig.name);
+        const lastMessageId = chat.findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
+        return lastMessageId;
     } else {
-        return -1;
+        const block_period = blockConfig.period;
+        const offset = may_current ? 0 : 1;
+        if (blockConfig.user_message && blockConfig.char_message) {
+            previous_block_message_id = messageId - offset - ((messageId - offset) % block_period);
+        } else if (blockConfig.user_message) {
+            previous_block_message_id = messageId - offset - ((messageId - 1 - offset) % block_period);
+            if (previous_block_message_id % 2 != 1) {
+                previous_block_message_id -= block_period;
+            }
+        } else if (blockConfig.char_message) {
+            previous_block_message_id = messageId - offset - ((messageId - offset) % block_period);
+            if (previous_block_message_id % 2 != 0) {
+                previous_block_message_id -= block_period;
+            }
+        } else {
+            return -1;
+        }
     }
 
     return previous_block_message_id;
@@ -933,13 +1002,14 @@ function extractMessageFromData(data) {
     }
 }
 
+
 function getBlockCombinedContext(block, messageId, allBlocks, additionalMacro = {}) {
     let contextStringArray = [];
     block.context.forEach((context_item) => {
         if (context_item.type === 'text') {
             contextStringArray.push(substituteParamsExtended(context_item.text, additionalMacro));
 
-        } else if (context_item.type === 'last_messages') {
+        } else if (context_item.type === 'last_messages' || context_item.type === 'last_messages_keyword') {
             const lastMessages = getLastMessagesContext(context_item);
             if (lastMessages != '') {
                 contextStringArray.push(lastMessages);
@@ -1090,8 +1160,14 @@ async function handleMessageTrigger(messageId, isUser) {
     const allBlocks = getAllEnabledBlocks();
     const triggeredBlocks = allBlocks.filter((block) => {
         const trigger_predicate = isUser ? block.user_message : block.char_message;
-        const period_predicate = isUser ? ((messageId - 1) % block.period === 0) : (messageId % block.period === 0);
-        return trigger_predicate && period_predicate;
+        if (block.keyword && block.keyword !== '') {
+            const keyword_predicate = chat[messageId].mes.includes(block.keyword);
+            return trigger_predicate && keyword_predicate;
+        } else {
+            const period_predicate = isUser ? ((messageId - 1) % block.period === 0) : (messageId % block.period === 0);
+            return trigger_predicate && period_predicate;
+        }
+        
     });
     await handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks);
 }
@@ -1377,14 +1453,16 @@ jQuery(async () => {
     eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, handleCharTrigger);
     eventSource.makeFirst(event_types.MESSAGE_SWIPED, async (messageId) => {
         const current_swipe_id = chat[messageId].swipe_id;
-        if (current_swipe_id === chat[messageId].swipes.length) {
-            if (current_swipe_id == 1) {
-                firstSwipeBlockExtra(messageId);
+        if (messageId !== 0) {
+            if (current_swipe_id === chat[messageId].swipes.length) {
+                if (current_swipe_id == 1) {
+                    firstSwipeBlockExtra(messageId);
+                }
+                await purgeBlocksExtra(messageId - 1, true);
+                await handleUserTrigger(messageId - 1, true);
+            } else {
+                await swipeBlockExtra(messageId, current_swipe_id);
             }
-            await purgeBlocksExtra(messageId - 1, true);
-            await handleUserTrigger(messageId - 1, true);
-        } else {
-            await swipeBlockExtra(messageId, current_swipe_id);
         }
     });
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
