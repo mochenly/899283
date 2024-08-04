@@ -275,6 +275,11 @@ async function addBlocksToExtra(messageId, blocksStr) {
     await updateBlocksDisplay(messageId);
 }
 
+async function appendStringToExtraCallback(_, blocksStr) {
+    await addBlocksToExtra(chat.length - 1, blocksStr);
+    return '';
+}
+
 async function purgeBlocksExtra(messageId, no_update = false) {
     if (chat[messageId].extra === undefined) {
         return;
@@ -296,6 +301,11 @@ async function purgeBlocksExtra(messageId, no_update = false) {
     if (!no_update) {
         await updateBlocksDisplay(messageId);
     }
+}
+
+async function purgeExtraCallback() {
+    await purgeBlocksExtra(chat.length - 1);
+    return '';
 }
 
 async function swipeBlockExtra(messageId, swipeId) {
@@ -1438,6 +1448,7 @@ jQuery(async () => {
             is_chat_modified = false;
             await loadBlocks();
             populateBlockMacrosBuffer();
+            console.log(chat[chat.length - 1]);
         }
     });
     eventSource.makeFirst(event_types.MESSAGE_EDITED, () => {
@@ -1489,6 +1500,23 @@ jQuery(async () => {
             ),
         ],
         helpString: 'Starts generating a block by its name.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extblocks-storage-append',
+        callback: appendStringToExtraCallback,
+        returns: 'void',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'block string', [ARGUMENT_TYPE.STRING], false, false, ''
+            ),
+        ],
+        helpString: 'Appends block/blocks to the last message block storage.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extblocks-storage-purge',
+        callback: purgeExtraCallback,
+        returns: 'void',
+        helpString: 'Purge the last message block storage.',
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
