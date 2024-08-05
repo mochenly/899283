@@ -403,6 +403,10 @@ async function saveBlock(block, index, isScoped) {
         await writeExtensionField(this_chid, 'ExtBlocks', array);
     }
 
+    if (block.inject_block && block.disabled) {
+        injectEmptyBlock(block);
+    }
+
     saveSettingsDebounced();
     await loadBlocks();
     if (this_chid !== undefined) {
@@ -919,6 +923,17 @@ function injectBlock(block, blockConfig) {
     setExtensionPrompt(key, block, position, depth, true, role);
 }
 
+function injectEmptyBlock(blockConfig) {
+    const key = `${defaultExtPrefix} ${blockConfig.name}`;
+    const position = blockConfig.injection_position;
+    const role = blockConfig.injection_role;
+    let depth = blockConfig.injection_depth;
+    if (depth < 0) {
+        depth = chat.length - depth;
+    }
+    setExtensionPrompt(key, '', position, depth, true, role);
+}
+
 function getAllBlocks() {
     const embeddedBlocks = characters[this_chid]?.data?.extensions?.ExtBlocks ?? [];
     return priorityCombineBlocks(current_set.global_blocks, embeddedBlocks);
@@ -1163,9 +1178,6 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
             };
         }
         toastr.success(`${defaultExtPrefix} Done!`);
-        if (!isUser) {
-            await selfReloadCurrentChat();
-        }
     }
 }
 
