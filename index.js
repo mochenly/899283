@@ -1163,6 +1163,9 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
             };
         }
         toastr.success(`${defaultExtPrefix} Done!`);
+        if (!isUser) {
+            await selfReloadCurrentChat();
+        }
     }
 }
 
@@ -1191,11 +1194,9 @@ async function handleUserTrigger(messageId, is_swipe = false) {
     if (chat[messageId].is_system) {
         return;
     }
-    if (!is_swipe) {
-        await purgeBlocksExtra(messageId, true);
-    }
 
     if ((!is_swipe) || (is_swipe && is_chat_modified)) {
+        await purgeBlocksExtra(messageId, true);
         is_chat_modified = false;
         await handleMessageTrigger(messageId, true);
     }
@@ -1231,7 +1232,6 @@ async function handleCharTrigger(messageId) {
 
     is_chat_modified = false;
     await handleMessageTrigger(messageId, false);
-    await selfReloadCurrentChat();
 }
 
 async function runBlockGenerationCallback(args, additional_prompt) {
@@ -1304,7 +1304,7 @@ async function setupListeners() {
             let newSet = await getDefaultSet();
             newSet.name = String(newSetHtml.find('.ExtBlocks-newset-name').val());
             const set_idx = updateOrInsert(extension_settings.ExtBlocks.sets, newSet);
-            changeSet(set_idx);
+            await changeSet(set_idx);
         }
     });
     $('#ExtBlocks-preset-importFile').on('change', async function () {
@@ -1331,10 +1331,10 @@ async function setupListeners() {
 
         extension_settings.ExtBlocks.sets.splice(extension_settings.ExtBlocks.active_set_idx, 1);
         if (extension_settings.ExtBlocks.sets.length != 0) {
-            changeSet(0);
+            await changeSet(0);
         } else {
             const set_idx = updateOrInsert(extension_settings.ExtBlocks.sets, await getDefaultSet());
-            changeSet(set_idx);
+            await changeSet(set_idx);
         }
 
     });
@@ -1468,7 +1468,6 @@ jQuery(async () => {
                 if (current_swipe_id == 1) {
                     firstSwipeBlockExtra(messageId);
                 }
-                await purgeBlocksExtra(messageId - 1, true);
                 await handleUserTrigger(messageId - 1, true);
             } else {
                 await swipeBlockExtra(messageId, current_swipe_id);
