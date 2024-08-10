@@ -1,0 +1,123 @@
+<div id="ExtBlocks-accumulationeditor-template">
+    <div class="ExtBlocks-accumulationeditor wide100p">
+        <h3 class="flex-container justifyCenter alignItemsBaseline">
+            <strong data-i18n="Block Editor">Accumulation Block Editor</strong>
+        </h3>
+
+        <hr>
+
+        <div class="flex-container flexFlowRow wide100p">
+            <div class="ExtBlocks-accumulationeditor-settings wide100p">
+                <div class="flex-container flexFlowColumn">
+                    <div class="flex1">
+                        <label for="ExtBlocks-accumulationeditor-block-name" class="title_restorable">
+                            <small data-i18n="Block Name">Block Name</small>
+                        </label>
+                        <div>
+                            <input
+                                class="ExtBlocks-accumulationeditor-block-name text_pole textarea_compact"
+                                placeholder="Exact name without angle brackets."
+                                type="text" />
+                        </div>
+                    </div>
+
+                    <div class="flex1">
+                        <label for="ExtBlocks-accumulationeditor-blockupdater-name" class="title_restorable">
+                            <small data-i18n="Block-updater Name">Block-updater Name</small>
+                        </label>
+                        <div>
+                            <input
+                                class="ExtBlocks-accumulationeditor-blockupdater-name text_pole textarea_compact"
+                                placeholder="Exact name without angle brackets (different from above)"
+                                type="text" />
+                        </div>
+                    </div>
+                </div>
+
+                <br>
+
+                <div class="flex-container">
+                    <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
+                        <small data-i18n="ExtBlocks-accumulationeditor-triggers">Triggers</small>
+                        <div title="Messages sent by the user and swipes.">
+                            <label class="checkbox flex-container">
+                                <input type="checkbox" name="user_message">
+                                <span data-i18n="User Message">User Message</span>
+                            </label>
+                        </div>
+
+                        <div title="Messages received from the Generation API.">
+                            <label class="checkbox flex-container">
+                                <input type="checkbox" name="char_message">
+                                <span data-i18n="Char Message">Char Message</span>
+                            </label>
+                        </div>
+
+                        <small data-i18n="ExtBlocks-accumulationeditor-state">State</small>
+
+                        <label class="checkbox flex-container">
+                            <input type="checkbox" name="disabled" />
+                            <span data-i18n="Disabled">Disabled</span>
+                        </label>
+
+                        <div title="Do not display blocks in chat.">
+                            <label class="checkbox flex-container">
+                                <input type="checkbox" name="hide_display">
+                                <span data-i18n="Hide From Display">Hide From Display</span>
+                            </label>
+                        </div>
+
+                        <label class="checkbox flex-container">
+                            <input type="checkbox" name="inject_block" />
+                            <span data-i18n="Inject block">Inject block</span>
+                        </label>
+                    </div>
+
+
+                    <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
+                        <div class="flex-container wide100p marginTop5">
+                            <div class="flex1 flex-container flexNoGap">
+                                <small data-i18n="[title]ExtBlocks-accumulationeditor-injection-role-desc" title="">
+                                    <span data-i18n="Injection Role">Injection Role</span>
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </small>
+                                <select name="ExtBlocks-accumulationeditor-injection-role" class="text_pole">
+                                    <option value="0">System</option>
+                                    <option value="1">User</option>
+                                    <option value="2">Assistant</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex-container wide100p marginTop5">
+                            <div class="flex1 flex-container flexNoGap">
+                            <small data-i18n="[title]ExtBlocks-accumulationeditor-injection-position-desc" title="">
+                                <span data-i18n="Injection Position">Injection Position</span>
+                                <span class="fa-solid fa-circle-question note-link-span"></span>
+                            </small>
+                            <select name="ExtBlocks-accumulationeditor-injection-position" class="text_pole">
+                                <option value="0">After Main Prompt</option>
+                                <option value="1">In Chat</option>
+                                <option value="2">Before Main Prompt</option>
+                            </select>
+                        </div>
+                    </div>
+
+                        <div class="flex-container wide100p marginTop5">
+                            <div class="flex1 flex-container flexNoGap">
+                                <small data-i18n="[title]ExtBlocks-accumulationeditor-injection-depth-desc" title="">
+                                    <span data-i18n="Injection Depth">Injection Depth</span>
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </small>
+                                <input name="injection_depth" class="text_pole textarea_compact" type="number" min="-999" max="999" data-i18n="[placeholder]ExtBlocks-accumulationeditor-injection-depth-placeholder" placeholder="4" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+        </div>
+    </div>
+</div>

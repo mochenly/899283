@@ -160,6 +160,10 @@ async function importSet(file) {
     }
 }
 
+function getRegexForBlock(block_name) {
+    return `(\\n*<${block_name}>[\\s\\S]*?<\\/${block_name}>\\n*)`;
+}
+
 
 async function createRegexForBlocks(forceReload = false) {
     let spoiler_names = [];
@@ -179,7 +183,7 @@ async function createRegexForBlocks(forceReload = false) {
 
     if (spoiler_names.length != 0) {
         let oldRegexSource;
-        const newRegexSource = `${spoiler_names.map(name => `(\\n*<${name}>[\\s\\S]*?<\\/${name}>\\n*)`).join('|')}`;
+        const newRegexSource = `${spoiler_names.map(block_name => getRegexForBlock(block_name)).join('|')}`;
         if (spoilerRegex !== undefined) {
             oldRegexSource = spoilerRegex.source;
             if (oldRegexSource !== newRegexSource) {
@@ -260,6 +264,10 @@ async function addBlocksToExtra(messageId, blocksStr) {
     if (chat[messageId].swipe_id) {
         const current_swipe_id = chat[messageId].swipe_id;
 
+        if (chat[messageId].swipe_info[current_swipe_id] === undefined) {
+            chat[messageId].swipe_info[current_swipe_id] = {};
+        }
+
         if (chat[messageId].swipe_info[current_swipe_id].extra === undefined) {
             chat[messageId].swipe_info[current_swipe_id].extra = {};
         }
@@ -309,14 +317,42 @@ async function purgeExtraCallback() {
 }
 
 async function swipeBlockExtra(messageId, swipeId) {
-    chat[messageId].extra.extblocks = JSON.parse(JSON.stringify(chat[messageId].swipe_info[swipeId].extra.extblocks))
+    if (chat[messageId].swipe_info[swipeId] && chat[messageId].swipe_info[swipeId].extra && chat[messageId].swipe_info[swipeId].extra.extblocks) {
+        chat[messageId].extra.extblocks = chat[messageId].swipe_info[swipeId].extra.extblocks;
+    } else {
+        chat[messageId].extra.extblocks = '';
+    }
 
     await updateBlocksDisplay(messageId);
 }
 
 function firstSwipeBlockExtra(messageId) {
     if (chat[messageId].extra.extblocks) {
-        chat[messageId].swipe_info[0].extra.extblocks = JSON.parse(JSON.stringify(chat[messageId].extra.extblocks));
+        chat[messageId].swipe_info[0].extra.extblocks = chat[messageId].extra.extblocks;
+    } else {
+        chat[messageId].swipe_info[0].extra.extblocks = '';
+    }
+}
+
+
+async function checkBlocksInFirstMessage() {
+    const allBlocks = getAllBlocks();
+    const allBlocksEncloseRegex = allBlocks.map(block => getBlockEncloseRegex(block.name));
+    const allBlocksPurgeRegex = new RegExp(`${allBlocks.map(block => getRegexForBlock(block.name)).join('|')}`, 'g');
+
+    let blocksStr = '';
+    for (let idx = 0; idx < allBlocks.length; idx++) {
+        const encloseRegex = allBlocksEncloseRegex[idx];
+        const enclosedBlock = chat[0].mes.replace(encloseRegex, '');
+        if (enclosedBlock !== '') {
+            blocksStr += blocksStr === '' ? enclosedBlock : `\n${enclosedBlock}`
+        }
+    }
+
+    if (blocksStr !== '') {
+        blocksStr = blocksStr.replaceAll(/\r/g, '');
+        chat[0].mes = chat[0].mes.replaceAll(allBlocksPurgeRegex, '');
+        await addBlocksToExtra(0, blocksStr);
     }
 }
 
@@ -450,6 +486,26 @@ async function loadBlocks() {
             block.id = uuidv4();
         }
 
+        let block_type = block.block_type;
+        let editor_func;
+        if (block_type === undefined) {
+            block_type = 'generated';
+        }
+
+        if (block_type === 'generated') {
+            blockHtml.find('.ExtBlocks-block-atype-icon').hide();
+            editor_func = openEditor;
+            blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
+                const fileName = `${block.name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()} prompt.json`;
+                const fileData = JSON.stringify({fullPrompt: await checkAllMacros(getSingleBlockFullPrompt(block))}, null, 4);
+                download(fileData, fileName, 'application/json');
+            });
+        } else if (block_type === 'accumulation') {
+            blockHtml.find('.ExtBlocks-block-gtype-icon').hide();
+            blockHtml.find('.export_prompt_ExtBlocks').hide();
+            editor_func = openAccumulationEditor;
+        }
+
         blockHtml.attr('id', block.id);
         blockHtml.find('.ExtBlocks_block_name').text(block.name);
         blockHtml.find('.disable_ExtBlocks').prop('checked', block.disabled ?? false)
@@ -464,16 +520,11 @@ async function loadBlocks() {
             blockHtml.find('.disable_ExtBlocks').prop('checked', false).trigger('input');
         });
         blockHtml.find('.edit_existing_ExtBlocks').on('click', async function () {
-            await openEditor(blockHtml.attr('id'), isScoped);
+            await editor_func(blockHtml.attr('id'), isScoped);
         });
         blockHtml.find('.export_ExtBlocks').on('click', async function () {
             const fileName = `${block.name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()}.json`;
             const fileData = JSON.stringify(block, null, 4);
-            download(fileData, fileName, 'application/json');
-        });
-        blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
-            const fileName = `${block.name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()} prompt.json`;
-            const fileData = JSON.stringify({fullPrompt: await checkAllMacros(getSingleBlockFullPrompt(block))}, null, 4);
             download(fileData, fileName, 'application/json');
         });
         blockHtml.find('.delete_ExtBlocks').on('click', async function () {
@@ -490,8 +541,8 @@ async function loadBlocks() {
         $(container).append(blockHtml);
     }
 
-    current_set.global_blocks.forEach((block, index, array) => renderBlock('#ExtBlocks-blocks-global-list', block, false, index));
-    characters[this_chid]?.data?.extensions?.ExtBlocks?.forEach((block, index, array) => renderBlock('#ExtBlocks-blocks-scoped-list', block, true, index));
+    current_set.global_blocks.forEach((block, index) => renderBlock('#ExtBlocks-blocks-global-list', block, false, index));
+    characters[this_chid]?.data?.extensions?.ExtBlocks?.forEach((block, index) => renderBlock('#ExtBlocks-blocks-scoped-list', block, true, index));
     if (ExtBlocks_settings.extblocks_is_enabled) {
         await createRegexForBlocks();
     }
@@ -747,6 +798,7 @@ async function openEditor(existingId, isScoped) {
         const block_keyword = trigger_periodicity === 'keyword' ? String(editorHtml.find('input[name="keyword"]').val() || '') : '';
         const newBlock = {
             id: existingId ? String(existingId) : uuidv4(),
+            block_type: 'generated',
             name: String(editorHtml.find('.ExtBlocks-editor-block-name').val()),
             disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
             template: String(editorHtml.find('.ExtBlocks-editor-block-template').val()),
@@ -761,6 +813,61 @@ async function openEditor(existingId, isScoped) {
             injection_position: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-position"]`).val())),
             injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val() || 4)),
             context: contextItems
+        };
+
+        saveBlock(newBlock, existingBlockIndex, isScoped);
+    }
+}
+
+async function openAccumulationEditor(existingId, isScoped) {
+    const editorHtml = $(await renderExtensionTemplateAsync(templates_path, 'accumulation_editor'));
+    const array = (isScoped ? characters[this_chid]?.data?.extensions?.ExtBlocks : extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].global_blocks) ?? [];
+
+    let existingBlockIndex = -1;
+    if (existingId) {
+        existingBlockIndex = array.findIndex((block) => block.id === existingId);
+        if (existingBlockIndex !== -1) {
+            const existingBlock = array[existingBlockIndex];
+            if (existingBlock.name) {
+                editorHtml.find('.ExtBlocks-accumulationeditor-block-name').val(existingBlock.name);
+            } else {
+                toastr.error('This block doesn\'t have a name! Please delete it.');
+                return;
+            }
+
+            editorHtml.find('.ExtBlocks-accumulationeditor-blockupdater-name').val(existingBlock.updater_name);
+
+            editorHtml.find('input[name="user_message"]').prop('checked', existingBlock.user_message ?? false);
+            editorHtml.find('input[name="char_message"]').prop('checked', existingBlock.char_message ?? true);
+            
+            editorHtml.find('input[name="hide_display"]').prop('checked', existingBlock.hide_display ?? false);
+            editorHtml.find('input[name="inject_block"]').prop('checked', existingBlock.inject_block ?? false);
+            editorHtml.find('input[name="disabled"]').prop('checked', existingBlock.disabled ?? false);
+
+            editorHtml.find(`select[name="ExtBlocks-accumulationeditor-injection-role"]`).val(existingBlock.injection_role ?? 0);
+            editorHtml.find(`select[name="ExtBlocks-accumulationeditor-injection-position"]`).val(existingBlock.injection_position ?? 0);
+            editorHtml.find('input[name="injection_depth"]').val(existingBlock.injection_depth ?? 2);
+        }
+    } else {
+        editorHtml.find('input[name="disabled"]').prop('checked', false);
+        editorHtml.find('input[name="char_message"]').prop('checked', true);
+    }
+
+    const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save'});
+    if (popupResult) {
+        const newBlock = {
+            id: existingId ? String(existingId) : uuidv4(),
+            block_type: 'accumulation',
+            name: String(editorHtml.find('.ExtBlocks-accumulationeditor-block-name').val()),
+            updater_name: String(editorHtml.find('.ExtBlocks-accumulationeditor-blockupdater-name').val()),
+            disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
+            user_message: editorHtml.find('input[name="user_message"]').prop('checked'),
+            char_message: editorHtml.find('input[name="char_message"]').prop('checked'),
+            hide_display: editorHtml.find('input[name="hide_display"]').prop('checked'),
+            inject_block: editorHtml.find('input[name="inject_block"]').prop('checked'),
+            injection_role: parseInt(String(editorHtml.find(`select[name="ExtBlocks-accumulationeditor-injection-role"]`).val())),
+            injection_position: parseInt(String(editorHtml.find(`select[name="ExtBlocks-accumulationeditor-injection-position"]`).val())),
+            injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val() || 4)),
         };
 
         saveBlock(newBlock, existingBlockIndex, isScoped);
@@ -841,7 +948,7 @@ function getLastMessagesContext(item) {
     return combinedLastMessages;
 }
 
-function getBlockRegex(block_name) {
+function getBlockEncloseRegex(block_name) {
     const block_regex = new RegExp(`(?:[\\s\\S]*?(?=<${block_name}>)|$)|(?<=<\\/${block_name}>|^)[\\s\\S]*`, "g");
     return block_regex;
 }
@@ -852,16 +959,25 @@ function getBlockFromMessageWithRegex(message, block_regex) {
 }
 
 function getBlockFromMessage(message, block_name) {
-    const block_regex = getBlockRegex(block_name);
+    const block_regex = getBlockEncloseRegex(block_name);
     return getBlockFromMessageWithRegex(message, block_regex);
+}
+
+function getMultiBlockContentFromMessage(message, block_name) {
+    const block_regex = new RegExp(`(?:(?<=^)|(?<=<\\/${block_name}>))([\\s\\S]*?)(?=<${block_name}>|$)|<${block_name}>\\n*|<\\/${block_name}>`, "g");
+    return getBlockFromMessageWithRegex(message, block_regex).trim();
 }
 
 function getPreviousBlockMessageId(messageId, blockConfig, may_current = false) {
     const block_keyword = blockConfig.keyword;
     let previous_block_message_id;
     if (block_keyword && block_keyword !== '') {
-        const block_regex = getBlockRegex(blockConfig.name);
-        const lastMessageId = chat.findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
+        const block_regex = getBlockEncloseRegex(blockConfig.name);
+        const lastMessageId = chat.slice(0, messageId + 1).findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
+        return lastMessageId;
+    } else if (blockConfig.block_type === 'accumulation') {
+        const block_regex = getBlockEncloseRegex(blockConfig.name);
+        const lastMessageId = chat.slice(0, messageId + 1).findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
         return lastMessageId;
     } else {
         const block_period = blockConfig.period;
@@ -937,6 +1053,11 @@ function injectEmptyBlock(blockConfig) {
 function getAllBlocks() {
     const embeddedBlocks = characters[this_chid]?.data?.extensions?.ExtBlocks ?? [];
     return priorityCombineBlocks(current_set.global_blocks, embeddedBlocks);
+}
+
+function getAllGeneratedBlocks() {
+    const allBlocks = getAllBlocks();
+    return allBlocks.filter(block => block.block_type !== 'accumulation');
 }
 
 function getAllEnabledBlocks() {
@@ -1181,9 +1302,176 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
     }
 }
 
+function applyOperationsToAccumulationBlock(mainBlock, operationsStr) {
+    const operations = operationsStr.trim().split('\n');
+
+    operations.forEach(operation => {
+        operation = operation.trim();
+
+        if (operation.includes(':')) {
+            const [key, value] = operation.split(':').map(s => s.trim());
+
+            if (value.startsWith('- ') || value.startsWith('+ ')) {
+                const itemValue = value.slice(2).trim();
+                if (mainBlock[key] !== undefined) {
+                    if (mainBlock[key][itemValue] !== undefined) {
+                        if (value.startsWith('-')) {
+                            mainBlock[key][itemValue]--;
+                            if (mainBlock[key][itemValue] <= 0) {
+                                delete mainBlock[key][itemValue];
+                            }
+                        } else if (value.startsWith('+')) {
+                            mainBlock[key][itemValue]++;
+                        }
+                    } else if (value.startsWith('+')) {
+                        mainBlock[key][itemValue] = 1;
+                    }
+                } else if (value.startsWith('+')) {
+                    mainBlock[key] = { [itemValue]: 1 };
+                }
+            } else if (value.startsWith('-') || value.startsWith('+')) {
+                const numValue = parseInt(value, 10);
+                if (!isNaN(numValue)) {
+                    if (mainBlock[key] !== undefined) {
+                        mainBlock[key] += numValue;
+                    } else {
+                        mainBlock[key] = numValue;
+                    }
+                }
+            } else {
+                if (!isNaN(value)) {
+                    mainBlock[key] = parseInt(value, 10);
+                } else {
+                    mainBlock[key] = value;
+                }
+            }
+        }
+    });
+
+    return mainBlock;
+}
+
+function parseAccumulationBlock(blockStr) {
+    const lines = blockStr.trim().split('\n');
+    const result = {};
+    let currentObject = result;
+    const stack = [];
+
+    lines.forEach(line => {
+        line = line.trim();
+		
+		if (!line.includes(':')) {
+            return;
+        }
+
+        if (line.endsWith('[')) {
+            const key = line.replace(': [', '').trim();
+            const newObject = {};
+            currentObject[key] = newObject;
+            stack.push(currentObject);
+            currentObject = newObject;
+        } else if (line === ']') {
+            currentObject = stack.pop();
+        } else {
+            const [key, value] = line.split(':').map(s => s.trim());
+            if (!isNaN(value)) {
+                currentObject[key] = parseInt(value, 10);
+            } else {
+                currentObject[key] = value;
+            }
+        }
+    });
+
+    return result;
+}
+
+function getAccumulationBlockWrapper(blockStr) {
+    const lines = blockStr.trim().split('\n');
+    const upperWrapper = [];
+    const bottomWrapper = [];
+
+    let crossLine = false;
+    lines.forEach(line => {
+        line = line.trim();
+
+        if (line === '') {
+            return;
+        }
+
+		if (line.includes(':') || line.includes(']')) {
+            crossLine = true;
+            return;
+        } else {
+            if (crossLine) {
+                bottomWrapper.push(line);
+            } else {
+                upperWrapper.push(line);
+            }
+        }
+    });
+
+    return {
+        upperWrapper: upperWrapper.join('\n'),
+        bottomWrapper: bottomWrapper.join('\n')
+    }
+}
+
+function accumulationBlockToString(jsonObj, indentLevel = 0) {
+    const indent = '  '.repeat(indentLevel);
+    let result = '';
+
+    for (const key in jsonObj) {
+        if (typeof jsonObj[key] === 'object' && !Array.isArray(jsonObj[key])) {
+            result += `${indent}${key}: [\n`;
+            result += accumulationBlockToString(jsonObj[key], indentLevel + 1);
+            result += `${indent}]\n`;
+        } else if (Array.isArray(jsonObj[key])) {
+            result += `${indent}${key}: [${jsonObj[key].join(', ')}]\n`;
+        } else {
+            result += `${indent}${key}: ${jsonObj[key]}\n`;
+        }
+    }
+
+    return result;
+}
+
+function stringifyAccumulationBlock(blockJson, oldBlockStr) {
+    const blockWrapper = getAccumulationBlockWrapper(oldBlockStr);
+    const newBlockStr = accumulationBlockToString(blockJson);
+    return `${blockWrapper.upperWrapper}\n${newBlockStr}\n${blockWrapper.bottomWrapper}`;
+}
+
+async function handleBlocksAccumulation(messageId, triggeredAccumulationBlocks) {
+    const blocks = []
+    for (let idx = 0; idx < triggeredAccumulationBlocks.length; idx++) {
+        const block = triggeredAccumulationBlocks[idx];
+        const blockStr = getPreviousBlockContextUnconditional(block, chat.length - 1);
+        const blockJson = parseAccumulationBlock(blockStr);
+        const blockUpdater = getMultiBlockContentFromMessage(chat[messageId].mes, block.updater_name);
+        const updatedBlock = applyOperationsToAccumulationBlock(blockJson, blockUpdater);
+        const updatedBlockStr = stringifyAccumulationBlock(updatedBlock, blockStr);
+        blocks.push(updatedBlockStr);
+    };
+
+    await addBlocksToExtra(messageId, blocks.join('\n'));
+}
+
 async function handleMessageTrigger(messageId, isUser) {
     const allBlocks = getAllEnabledBlocks();
+
+    const triggeredAccumulationBlocks = allBlocks.filter((block) => {
+        if (block.block_type !== 'accumulation') {
+            return false;
+        }
+        const trigger_predicate = isUser ? block.user_message : block.char_message;
+        return trigger_predicate && chat[messageId].mes.includes(`<${block.updater_name}>`);
+    });
+    await handleBlocksAccumulation(messageId, triggeredAccumulationBlocks);
+
     const triggeredBlocks = allBlocks.filter((block) => {
+        if (block.block_type === 'accumulation') {
+            return false;
+        }
         const trigger_predicate = isUser ? block.user_message : block.char_message;
         if (block.keyword && block.keyword !== '') {
             const keyword_predicate = chat[messageId].mes.includes(block.keyword);
@@ -1199,10 +1487,6 @@ async function handleMessageTrigger(messageId, isUser) {
 
 
 async function handleUserTrigger(messageId, is_swipe = false) {
-    if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
-        return;
-    }
-
     if (chat[messageId].is_system) {
         return;
     }
@@ -1228,15 +1512,7 @@ async function handleUserTrigger(messageId, is_swipe = false) {
 }
 
 async function handleCharTrigger(messageId) {
-    if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
-        return;
-    }
-
     if (['...', ''].includes(chat[messageId]?.mes)) {
-        return;
-    }
-
-    if (messageId == 0) {
         return;
     }
 
@@ -1253,7 +1529,7 @@ async function runBlockGenerationCallback(args, additional_prompt) {
     }
     const block_name = args.name;
 
-    const allBlocks = getAllBlocks();
+    const allBlocks = getAllGeneratedBlocks();
     const block = allBlocks.find((e) => e.name === block_name);
     if (block) {
         const messageId = chat.length - 1;
@@ -1403,6 +1679,22 @@ async function setupListeners() {
         openEditor(false, true);
     });
 
+    $('#ExtBlocks-blocks-global-openaccumulationeditor').off('click').on('click', () => {
+        openAccumulationEditor(false, false);
+    });
+    $('#ExtBlocks-blocks-scoped-openaccumulationeditor').off('click').on('click', () => {
+        if (this_chid === undefined) {
+            toastr.error('No character selected.');
+            return;
+        }
+
+        if (selected_group) {
+            toastr.error('Cannot edit embedded blocks in group chats.');
+            return;
+        }
+        openAccumulationEditor(false, true);
+    });
+
     $('#ExtBlocks-blocks-global-import-file').on('change', async function () {
         const inputElement = this instanceof HTMLInputElement && this;
         for (const file of inputElement.files) {
@@ -1471,9 +1763,29 @@ jQuery(async () => {
         }
     });
     eventSource.on(event_types.MESSAGE_DELETED, () => is_chat_modified = true);
-    eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, handleUserTrigger);
-    eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, handleCharTrigger);
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, async (messageId) => {
+        if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
+            return;
+        }
+        
+        await handleUserTrigger(messageId);
+    });
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, async (messageId) => {
+        if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
+            return;
+        }
+
+        if (messageId !== 0) {
+            await handleCharTrigger(messageId);
+        } else {
+            await checkBlocksInFirstMessage();
+        }
+    });
     eventSource.makeFirst(event_types.MESSAGE_SWIPED, async (messageId) => {
+        if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
+            return;
+        }
+
         const current_swipe_id = chat[messageId].swipe_id;
         if (messageId !== 0) {
             if (current_swipe_id === chat[messageId].swipes.length) {
@@ -1484,6 +1796,9 @@ jQuery(async () => {
             } else {
                 await swipeBlockExtra(messageId, current_swipe_id);
             }
+        } else {
+            await checkBlocksInFirstMessage();
+            await swipeBlockExtra(messageId, current_swipe_id);
         }
     });
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({

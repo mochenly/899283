@@ -4,6 +4,6 @@
 
 https://rentry.org/ext_blocks
 
-## Установка
+# Installation
 
-Extensions -> Install extension (сверху справа) -> Вставить ссылку `https://gitgud.io/Monblant/extblocks`
+Extensions -> Install extension (top right) -> Insert link `https://gitgud.io/Monblant/extblocks`
