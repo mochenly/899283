@@ -1777,6 +1777,7 @@ jQuery(async () => {
 
         if (messageId !== 0) {
             await handleCharTrigger(messageId);
+            await updateBlocksDisplay(messageId - 2)
         } else {
             await checkBlocksInFirstMessage();
         }
