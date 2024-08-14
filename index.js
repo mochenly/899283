@@ -910,7 +910,7 @@ function getLastMessagesContext(item) {
     if (messages_count === undefined) {
         const keyword_stopper = item.keyword_stopper;
         if (keyword_stopper && keyword_stopper !== '') {
-            const lastMessageId = chat.slice(0, -1).findLastIndex(message => message.mes.includes(keyword_stopper));
+            let lastMessageId = chat.slice(0, -1).findLastIndex(message => message.mes.includes(keyword_stopper));
             if (lastMessageId == -1) {
                 lastMessageId = 0;
             }
@@ -1763,14 +1763,14 @@ jQuery(async () => {
         }
     });
     eventSource.on(event_types.MESSAGE_DELETED, () => is_chat_modified = true);
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, async (messageId) => {
+    eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, async (messageId) => {
         if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
             return;
         }
         
         await handleUserTrigger(messageId);
     });
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, async (messageId) => {
+    eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, async (messageId) => {
         if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
             return;
         }
