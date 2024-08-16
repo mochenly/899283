@@ -1527,13 +1527,12 @@ async function runBlockGenerationCallback(args, additional_prompt) {
         toastr.warning(`No block name provided`);
         return '';
     }
-    const block_name = args.name;
+    const block_names = args.name.split(',').map((name) => name.trim());
 
     const allBlocks = getAllGeneratedBlocks();
-    const block = allBlocks.find((e) => e.name === block_name);
-    if (block) {
+    const blocks = allBlocks.filter((e) => block_names.includes(e.name));
+    if (blocks.length > 0) {
         const messageId = chat.length - 1;
-        const isUser = block.user_message && !block.char_message;
         let additionalMacro = {};
         if (additional_prompt !== '') {
             additionalMacro = { additionalPrompt: substituteParamsExtended(additional_prompt) }
@@ -1542,9 +1541,9 @@ async function runBlockGenerationCallback(args, additional_prompt) {
         if (args.is_separate) {
             is_separate = args.is_separate;
         }
-        await handleBlocksGeneration(messageId, isUser, allBlocks, [block], additionalMacro, is_separate);
+        await handleBlocksGeneration(messageId, false, allBlocks, blocks, additionalMacro, is_separate);
     } else {
-        toastr.warning(`Block "${block_name}" not found.`);
+        toastr.warning(`Blocks not found.`);
     }
     return '';
 }
