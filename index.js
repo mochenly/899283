@@ -1106,7 +1106,8 @@ function getBlockEncloseRegex(block_name) {
 }
 
 function getBlockFromMessageWithRegex(message, block_regex) {
-    const block = message.replace(block_regex, '');
+    let block = message.replace(block_regex, '');
+    block = block.replace(/^<+/, '<');
     return block;
 }
 
