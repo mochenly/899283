@@ -138,3 +138,15 @@ input.disable_ExtBlocks {
 .disable_ExtBlocks:not(:checked) ~ .ExtBlocks-toggle-on {
     display: block;
 }
+
+.ExtBlocks-editor-context-item-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.ExtBlocks-preset-context-item-save,
+.ExtBlocks-preset-context-item-exit {
+    flex: none;
+    cursor: pointer;
+}
