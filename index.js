@@ -316,6 +316,42 @@ async function purgeExtraCallback() {
     return '';
 }
 
+function getAllPreviousBlocks() {
+    const blocks = getAllEnabledBlocks();
+    let blocksStrArray = [];
+    blocks.forEach(block => {
+        blocksStrArray.push(getPreviousBlockContextUnconditional(block, chat.length - 1, true).trim());
+    });
+
+    return blocksStrArray.join('\n\n');
+}
+
+async function exportBlocksCallback() {
+    if (this_chid !== undefined) {
+        const blocksStr = getAllPreviousBlocks();
+        const message = {
+            name: 'System',
+            is_user: false,
+            is_system: true,
+            mes: blocksStr,
+            force_avatar: system_avatar,
+            extra: {
+                type: system_message_types.NARRATOR,
+                bias: null,
+                gen_id: Date.now(),
+                api: 'manual',
+                model: 'slash command',
+            },
+        };
+        chat.push(message);
+        await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+        addOneMessage(message);
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+        await saveChat();
+    }
+    return '';
+}
+
 async function swipeBlockExtra(messageId, swipeId) {
     if (chat[messageId].swipe_info[swipeId] && chat[messageId].swipe_info[swipeId].extra && chat[messageId].swipe_info[swipeId].extra.extblocks) {
         chat[messageId].extra.extblocks = chat[messageId].swipe_info[swipeId].extra.extblocks;
@@ -2009,6 +2045,13 @@ jQuery(async () => {
         callback: async () => await selfReloadCurrentChat(),
         returns: 'void',
         helpString: 'Flushes ExtBlocks injects.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extblocks-storage-export',
+        callback: async () => await exportBlocksCallback(),
+        returns: 'void',
+        helpString: 'Exports each enabled block to a system message.',
     }));
 
     console.log(`${defaultExtPrefix} extension loaded`);
