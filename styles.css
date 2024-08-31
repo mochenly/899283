@@ -150,3 +150,7 @@ input.disable_ExtBlocks {
     flex: none;
     cursor: pointer;
 }
+
+.ExtBlocks-storage {
+    height: 80dvh;
+}

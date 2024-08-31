@@ -283,6 +283,14 @@ async function addBlocksToExtra(messageId, blocksStr) {
     await updateBlocksDisplay(messageId);
 }
 
+function getBlocksFromExtra(messageId) {
+    if (chat[messageId].extra !== undefined && chat[messageId].extra.extblocks !== undefined) {
+        return chat[messageId].extra.extblocks;
+    } else {
+        return '';
+    }
+}
+
 async function appendStringToExtraCallback(_, blocksStr) {
     await addBlocksToExtra(chat.length - 1, blocksStr);
     return '';
@@ -1750,6 +1758,24 @@ async function runBlockRegenerationCallback() {
     return '';
 }
 
+function addEditButtons() {
+    $('#chat .mes').each(function() {
+        if ($(this).find('.extraMesButtons .Extblocks-storage-edit').length === 0) {
+            var editButton = `<div title="Edit extblocks" class="mes_button Extblocks-storage-edit fa-solid fa-pen-to-square interactable" data-i18n="[title]Edit extblocks" tabindex="0"></div>`;
+            $(this).find('.extraMesButtons').append(editButton);
+        }
+    });
+}
+
+function addEditButtonToLastMessage() {
+    var lastMes = $('#chat .mes').last();
+
+    if (lastMes.find('.extraMesButtons .Extblocks-storage-edit').length === 0) {
+        var editButton = `<div title="Edit extblocks" class="mes_button Extblocks-storage-edit fa-solid fa-pen-to-square interactable" data-i18n="[title]Edit extblocks" tabindex="0"></div>`;ы
+        lastMes.find('.extraMesButtons').append(editButton);
+    }
+}
+
 async function setupListeners() {
     $('#extblocks_is_enabled').off('click').on('click', async () => {
         const value = $('#extblocks_is_enabled').prop('checked');
@@ -1905,6 +1931,20 @@ async function setupListeners() {
         $('#ExtBlocks-blocks-scoped-import-file').trigger('click');
     });
 
+    $('#chat').on('click', '.Extblocks-storage-edit', async function() {
+        const messageId = $(this).closest('.mes').attr('mesid');
+        const blocksStr = getBlocksFromExtra(messageId);
+
+        let storageEditorHtml = $(await renderExtensionTemplateAsync(templates_path, 'storage_editor'));
+        storageEditorHtml.find('.ExtBlocks-storage').val(blocksStr);
+
+        const popupResult = await callPopup(storageEditorHtml, 'confirm', undefined, { okButton: 'Save', wide: true });
+        if (popupResult) {
+            await purgeBlocksExtra(messageId, true);
+            await addBlocksToExtra(messageId, storageEditorHtml.find('.ExtBlocks-storage').val());
+        }
+    });
+
 
     let sortableBlocks = [
         {
@@ -1941,6 +1981,8 @@ jQuery(async () => {
             await loadBlocks();
             populateBlockMacrosBuffer();
         }
+
+        addEditButtons();
     });
     eventSource.makeFirst(event_types.MESSAGE_EDITED, () => {
         is_chat_modified = true;
@@ -1957,6 +1999,7 @@ jQuery(async () => {
         }
         
         await handleUserTrigger(messageId);
+        addEditButtonToLastMessage();
     });
     eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, async (messageId) => {
         if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
@@ -1969,6 +2012,7 @@ jQuery(async () => {
         } else {
             await checkBlocksInFirstMessage();
         }
+        addEditButtonToLastMessage();
     });
     eventSource.makeFirst(event_types.MESSAGE_SWIPED, async (messageId) => {
         if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
