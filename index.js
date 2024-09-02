@@ -438,7 +438,7 @@ async function importBlock(file, isScoped) {
 
         saveSettingsDebounced();
         await loadBlocks();
-        if (this_chid !== undefined) {
+        if (this_chid !== undefined && block.block_type !== 'rewrite') {
             insertBlockMacros(block);
         }
         
@@ -489,7 +489,7 @@ async function saveBlock(block, index, isScoped) {
 
     saveSettingsDebounced();
     await loadBlocks();
-    if (this_chid !== undefined) {
+    if (this_chid !== undefined && block.block_type !== 'rewrite') {
         insertBlockMacros(block);
     }
 }
@@ -538,6 +538,7 @@ async function loadBlocks() {
 
         if (block_type === 'generated') {
             blockHtml.find('.ExtBlocks-block-atype-icon').hide();
+            blockHtml.find('.ExtBlocks-block-rtype-icon').hide();
             editor_func = openEditor;
             blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
                 const fileName = `${block.name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()} prompt.json`;
@@ -546,8 +547,18 @@ async function loadBlocks() {
             });
         } else if (block_type === 'accumulation') {
             blockHtml.find('.ExtBlocks-block-gtype-icon').hide();
+            blockHtml.find('.ExtBlocks-block-rtype-icon').hide();
             blockHtml.find('.export_prompt_ExtBlocks').hide();
             editor_func = openAccumulationEditor;
+        } else if (block_type === 'rewrite') {
+            blockHtml.find('.ExtBlocks-block-gtype-icon').hide();
+            blockHtml.find('.ExtBlocks-block-atype-icon').hide();
+            editor_func = openEditor;
+            blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
+                const fileName = `${block.name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()} prompt.json`;
+                const fileData = JSON.stringify({fullPrompt: await checkAllMacros(getSingleBlockFullPrompt(block))}, null, 4);
+                download(fileData, fileName, 'application/json');
+            });
         }
 
         blockHtml.attr('id', block.id);
@@ -852,6 +863,25 @@ async function openEditor(existingId, isScoped) {
             editorHtml.find('.Extblocks-editor-keyword-wrapper').hide();
         }
     }
+
+    function handleBlockTypeChange(blockType) {
+        const hideDisplayWrapper = editorHtml.find('#ExtBlocks-editor-hide-display-wrapper');
+        const injectBlockWrapper = editorHtml.find('#ExtBlocks-editor-inject-block-wrapper');
+        const injectSettings = editorHtml.find('#ExtBlocks-editor-inject-settings');
+        const generationOrderWrapper = editorHtml.find('#ExtBlocks-editor-generation-order-wrapper');
+    
+        if (blockType === 'rewrite') {
+            injectSettings.hide();
+            hideDisplayWrapper.hide();
+            injectBlockWrapper.hide();
+            generationOrderWrapper.show();
+        } else {
+            injectSettings.show();
+            hideDisplayWrapper.show();
+            injectBlockWrapper.show();
+            generationOrderWrapper.hide();
+        }
+    }
     
     let existingBlockIndex = -1;
     if (existingId) {
@@ -865,6 +895,9 @@ async function openEditor(existingId, isScoped) {
                 toastr.error('This block doesn\'t have a name! Please delete it.');
                 return;
             }
+
+            const blockType = existingBlock.block_type ?? 'generated'
+            editorHtml.find(`select[name="ExtBlocks-editor-block-type"]`).val(blockType);
             editorHtml.find('.ExtBlocks-editor-block-template').val(existingBlock.template ?? '');
             editorHtml.find('.ExtBlocks-editor-block-prompt').val(existingBlock.prompt ?? '');
 
@@ -885,7 +918,10 @@ async function openEditor(existingId, isScoped) {
             editorHtml.find(`select[name="ExtBlocks-editor-injection-role"]`).val(existingBlock.injection_role ?? 0);
             editorHtml.find(`select[name="ExtBlocks-editor-injection-position"]`).val(existingBlock.injection_position ?? 0);
             editorHtml.find('input[name="injection_depth"]').val(existingBlock.injection_depth ?? 2);
+            editorHtml.find(`select[name="ExtBlocks-editor-generation-order"]`).val(existingBlock.generation_order ?? 'before');
             await loadContextItems(editorHtml, existingBlock);
+
+            handleBlockTypeChange(blockType);
         }
     } else {
         editorHtml.find('input[name="disabled"]').prop('checked', false);
@@ -898,6 +934,11 @@ async function openEditor(existingId, isScoped) {
         const value = editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val();
         changeTriggerPeriodicity(value);
     });
+
+    editorHtml.find(`select[name="ExtBlocks-editor-block-type"]`).off('click').on('change', (event) => {
+        const value = editorHtml.find(`select[name="ExtBlocks-editor-block-type"]`).val();
+        handleBlockTypeChange(value);
+    })
 
     let sortableContextItems = [
         {
@@ -994,7 +1035,7 @@ async function openEditor(existingId, isScoped) {
         const block_keyword = trigger_periodicity === 'keyword' ? String(editorHtml.find('input[name="keyword"]').val() || '') : '';
         const newBlock = {
             id: existingId ? String(existingId) : uuidv4(),
-            block_type: 'generated',
+            block_type: editorHtml.find(`select[name="ExtBlocks-editor-block-type"]`).val(),
             name: String(editorHtml.find('.ExtBlocks-editor-block-name').val()),
             disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
             template: String(editorHtml.find('.ExtBlocks-editor-block-template').val()),
@@ -1008,6 +1049,7 @@ async function openEditor(existingId, isScoped) {
             injection_role: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-role"]`).val())),
             injection_position: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-position"]`).val())),
             injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val() || 4)),
+            generation_order: editorHtml.find(`select[name="ExtBlocks-editor-generation-order"]`).val() || 'before',
             context: contextItems
         };
 
@@ -1161,7 +1203,7 @@ function getBlockFromMessage(message, block_name) {
 }
 
 function getMultiBlockContentFromMessage(message, block_name) {
-    const block_regex = new RegExp(`(?:(?<=^)|(?<=<\\/${block_name}>))([\\s\\S]*?)(?=<${block_name}>|$)|<${block_name}>\\n*|<\\/${block_name}>`, "g");
+    const block_regex = new RegExp(`<${block_name}>\\n*|<\\/${block_name}>|(?:(?<=^)|(?<=<\\/${block_name}>))([\\s\\S]*?)(?=<${block_name}>|$)`, "g");
     return getBlockFromMessageWithRegex(message, block_regex).trim();
 }
 
@@ -1176,6 +1218,8 @@ function getPreviousBlockMessageId(messageId, blockConfig, may_current = false) 
         const block_regex = getBlockEncloseRegex(blockConfig.name);
         const lastMessageId = chat.slice(0, messageId + 1).findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
         return lastMessageId;
+    } else if (blockConfig.block_type === 'rewrite') {
+        return -1;
     } else {
         const block_period = blockConfig.period;
         const offset = may_current ? 0 : 1;
@@ -1254,7 +1298,12 @@ function getAllBlocks() {
 
 function getAllGeneratedBlocks() {
     const allBlocks = getAllBlocks();
-    return allBlocks.filter(block => block.block_type !== 'accumulation');
+    return allBlocks.filter(block => block.block_type !== 'accumulation' && block.block_type !== 'rewrite');
+}
+
+function getAllRewriteBlocks() {
+    const allBlocks = getAllBlocks();
+    return allBlocks.filter(block => block.block_type === 'rewrite');
 }
 
 function getAllEnabledBlocks() {
@@ -1287,7 +1336,9 @@ function populateBlockMacrosBuffer() {
     purgeAllBlocksMacros();
     const allBlocks = getAllEnabledBlocks();
     allBlocks.forEach((block) => {
-        insertBlockMacros(block);
+        if (block.block_type !== 'rewrite') {
+            insertBlockMacros(block);
+        }
     });
 }
 
@@ -1446,7 +1497,43 @@ async function checkAllMacros(prompt) {
 }
 
 async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}, is_separate = false) {
-    const groupedBlocks = groupBlocksByContext(triggeredBlocks);
+    const { generatedBlocks, rewriteBlocks } = triggeredBlocks.reduce((acc, block) => {
+        if (block.block_type === 'rewrite') {
+            acc.rewriteBlocks.push(block);
+        } else {
+            acc.generatedBlocks.push(block);
+        }
+        return acc;
+    }, { generatedBlocks: [], rewriteBlocks: [] });
+
+    async function generateRewriteBlocks(generation_order) {
+        if (rewriteBlocks.length > 0 && rewriteBlocks.some(block => block.generation_order === generation_order)) {
+            toastr.info(`${defaultExtPrefix} Rewriting, please wait...`);
+            for (let idx = 0; idx < rewriteBlocks.length; idx++) {
+                const rewriteBlock = rewriteBlocks[idx];
+                if (rewriteBlock.generation_order === generation_order) {
+                    const context = getBlockCombinedContext(rewriteBlock, messageId, allBlocks, additionalMacro);
+                    const template = `Block(s) template:\n${substituteParamsExtended(rewriteBlock.template, additionalMacro)}`;
+                    const prompt = `Block(s) prompt:\n${substituteParamsExtended(rewriteBlock.prompt, additionalMacro)}`;
+                    let fullPrompt = `${context}\n\n\n${template}\n\n${prompt}`;
+                    fullPrompt = await checkAllMacros(fullPrompt);
+                    const blocksData = await generateBlocks(fullPrompt);
+                    const blocks = extractMessageFromData(blocksData);
+                    const rewrittenText = getMultiBlockContentFromMessage(blocks, 'rewritten text');
+                    chat[messageId].mes = rewrittenText;
+                }
+            }
+            if(chat[messageId].swipe_id) {
+                chat[messageId].swipes[chat[messageId].swipe_id] = chat[messageId].mes;
+            }
+            await updateBlocksDisplay(messageId);
+            toastr.success(`${defaultExtPrefix} Rewriting is done!`);
+        }
+    }
+
+    await generateRewriteBlocks('before');
+
+    const groupedBlocks = groupBlocksByContext(generatedBlocks);
 
     const prompts = [];
 
@@ -1495,8 +1582,10 @@ async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlo
                 await saveChat();
             };
         }
-        toastr.success(`${defaultExtPrefix} Done!`);
+        toastr.success(`${defaultExtPrefix} Generating is done!`);
     }
+
+    await generateRewriteBlocks('after');
 }
 
 function applyOperationsToAccumulationBlock(mainBlock, operationsStr) {
@@ -1695,7 +1784,7 @@ async function handleUserTrigger(messageId, is_swipe = false) {
     }
     const allBlocks = getAllEnabledBlocks();
     allBlocks.forEach(blockConfig => {
-        if (blockConfig.inject_block) {
+        if (blockConfig.inject_block && blockConfig.block_type !== 'rewrite') {
             const mes_id = getPreviousBlockMessageId(messageId, blockConfig, true);
             if (mes_id >= 0) {
                 if (chat[mes_id].extra && chat[mes_id].extra.extblocks) {
@@ -1745,6 +1834,29 @@ async function runBlockGenerationCallback(args, additional_prompt) {
     return '';
 }
 
+async function runRewriteBlocksCallback(args, additional_prompt) {
+    if (!args.name) {
+        toastr.warning(`No block name provided`);
+        return '';
+    }
+    const block_names = args.name.split(',').map((name) => name.trim());
+
+    const allBlocks = getAllRewriteBlocks();
+    const blocks = allBlocks.filter((e) => block_names.includes(e.name));
+    if (blocks.length > 0) {
+        const messageId = chat.length - 1;
+        let additionalMacro = {};
+        if (additional_prompt !== '') {
+            additionalMacro = { additionalPrompt: substituteParamsExtended(additional_prompt) }
+        }
+        let is_separate = false;
+        await handleBlocksGeneration(messageId, false, allBlocks, blocks, additionalMacro, is_separate);
+    } else {
+        toastr.warning(`Blocks not found.`);
+    }
+    return '';
+}
+
 async function runBlockRegenerationCallback() {
     const messageId = chat.length - 1;
     if (messageId == 0) {
@@ -1771,7 +1883,7 @@ function addEditButtonToLastMessage() {
     var lastMes = $('#chat .mes').last();
 
     if (lastMes.find('.extraMesButtons .Extblocks-storage-edit').length === 0) {
-        var editButton = `<div title="Edit extblocks" class="mes_button Extblocks-storage-edit fa-solid fa-pen-to-square interactable" data-i18n="[title]Edit extblocks" tabindex="0"></div>`;ы
+        var editButton = `<div title="Edit extblocks" class="mes_button Extblocks-storage-edit fa-solid fa-pen-to-square interactable" data-i18n="[title]Edit extblocks" tabindex="0"></div>`;
         lastMes.find('.extraMesButtons').append(editButton);
     }
 }
@@ -2041,7 +2153,7 @@ jQuery(async () => {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'block name',
+                description: 'block name(s)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
             }),
@@ -2057,7 +2169,7 @@ jQuery(async () => {
                 'additional prompt', [ARGUMENT_TYPE.STRING], false, false, ''
             ),
         ],
-        helpString: 'Starts generating a block by its name.',
+        helpString: 'Starts generating block(s) by its/their name.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'extblocks-storage-append',
@@ -2096,6 +2208,25 @@ jQuery(async () => {
         callback: async () => await exportBlocksCallback(),
         returns: 'void',
         helpString: 'Exports each enabled block to a system message.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extblocks-rewrite',
+        callback: runRewriteBlocksCallback,
+        returns: 'void',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'rewrite block name(s)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            })
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'additional prompt', [ARGUMENT_TYPE.STRING], false, false, ''
+            ),
+        ],
+        helpString: 'Rewrites the last message using rewriting blocks.',
     }));
 
     console.log(`${defaultExtPrefix} extension loaded`);

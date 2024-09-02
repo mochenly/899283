@@ -24,6 +24,17 @@
                         </div>
                     </div>
 
+                    <div class="flex1 flex-container flexNoGap">
+                        <small data-i18n="[title]ExtBlocks-editor-block-type-desc" title="">
+                            <span data-i18n="Block Type">Block Type</span>
+                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                        </small>
+                        <select name="ExtBlocks-editor-block-type" class="text_pole">
+                            <option value="generated">Injectable</option>
+                            <option value="rewrite">Rewrite</option>
+                        </select>
+                    </div>
+
                     <div class="flex1">
                         <label for="ExtBlocks-editor-block-template" class="title_restorable">
                             <small data-i18n="Block Template">Block Template</small>
@@ -72,7 +83,7 @@
                         <div class="flex-container wide100p marginTop5">
                             <div class="flex1 flex-container flexNoGap">
                                 <small data-i18n="[title]ExtBlocks-editor-trigger-periodicity-desc" title="">
-                                    <span data-i18n="Injection Role">Trigger periodicity</span>
+                                    <span data-i18n="Trigger periodicity">Trigger periodicity</span>
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
                                 </small>
                                 <select name="ExtBlocks-editor-trigger-periodicity" class="text_pole">
@@ -112,61 +123,78 @@
                             <span data-i18n="Disabled">Disabled</span>
                         </label>
 
-                        <div title="Do not display blocks in chat.">
+                        <div id="ExtBlocks-editor-hide-display-wrapper" title="Do not display blocks in chat.">
                             <label class="checkbox flex-container">
                                 <input type="checkbox" name="hide_display">
                                 <span data-i18n="Hide From Display">Hide From Display</span>
                             </label>
                         </div>
 
-                        <label class="checkbox flex-container">
-                            <input type="checkbox" name="inject_block" />
-                            <span data-i18n="Inject block">Inject block</span>
-                        </label>
+                        <div id="ExtBlocks-editor-inject-block-wrapper">
+                            <label class="checkbox flex-container">
+                                <input type="checkbox" name="inject_block" />
+                                <span data-i18n="Inject block">Inject block</span>
+                            </label>
+                        </div>
                     </div>
 
 
                     <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
-                        <div class="flex-container wide100p marginTop5">
-                            <div class="flex1 flex-container flexNoGap">
-                                <small data-i18n="[title]ExtBlocks-editor-injection-role-desc" title="">
-                                    <span data-i18n="Injection Role">Injection Role</span>
+                        <div id="ExtBlocks-editor-inject-settings">
+                            <div class="flex-container wide100p marginTop5">
+                                <div class="flex1 flex-container flexNoGap">
+                                    <small data-i18n="[title]ExtBlocks-editor-injection-role-desc" title="">
+                                        <span data-i18n="Injection Role">Injection Role</span>
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </small>
+                                    <select name="ExtBlocks-editor-injection-role" class="text_pole">
+                                        <option value="0">System</option>
+                                        <option value="1">User</option>
+                                        <option value="2">Assistant</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="flex-container wide100p marginTop5">
+                                <div class="flex1 flex-container flexNoGap">
+                                <small data-i18n="[title]ExtBlocks-editor-injection-position-desc" title="">
+                                    <span data-i18n="Injection Position">Injection Position</span>
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
                                 </small>
-                                <select name="ExtBlocks-editor-injection-role" class="text_pole">
-                                    <option value="0">System</option>
-                                    <option value="1">User</option>
-                                    <option value="2">Assistant</option>
+                                <select name="ExtBlocks-editor-injection-position" class="text_pole">
+                                    <option value="0">After Main Prompt</option>
+                                    <option value="1">In Chat</option>
+                                    <option value="2">Before Main Prompt</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div class="flex-container wide100p marginTop5">
-                            <div class="flex1 flex-container flexNoGap">
-                            <small data-i18n="[title]ExtBlocks-editor-injection-position-desc" title="">
-                                <span data-i18n="Injection Position">Injection Position</span>
-                                <span class="fa-solid fa-circle-question note-link-span"></span>
-                            </small>
-                            <select name="ExtBlocks-editor-injection-position" class="text_pole">
-                                <option value="0">After Main Prompt</option>
-                                <option value="1">In Chat</option>
-                                <option value="2">Before Main Prompt</option>
-                            </select>
+                            
+                            <div class="flex-container wide100p marginTop5">
+                                <div class="flex1 flex-container flexNoGap">
+                                    <small data-i18n="[title]ExtBlocks-editor-injection-depth-desc" title="">
+                                        <span data-i18n="Injection Depth">Injection Depth</span>
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </small>
+                                    <input name="injection_depth" class="text_pole textarea_compact" type="number" min="-999" max="999" data-i18n="[placeholder]ExtBlocks-editor-injection-depth-placeholder" placeholder="4" />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                        <div class="flex-container wide100p marginTop5">
-                            <div class="flex1 flex-container flexNoGap">
-                                <small data-i18n="[title]ExtBlocks-editor-injection-depth-desc" title="">
-                                    <span data-i18n="Injection Depth">Injection Depth</span>
-                                    <span class="fa-solid fa-circle-question note-link-span"></span>
-                                </small>
-                                <input name="injection_depth" class="text_pole textarea_compact" type="number" min="-999" max="999" data-i18n="[placeholder]ExtBlocks-editor-injection-depth-placeholder" placeholder="4" />
-                            </div>
+                    <div class="flex-container wide100p marginTop5" id="ExtBlocks-editor-generation-order-wrapper" style="display:none;">
+                        <div class="flex1 flex-container flexNoGap">
+                            <small data-i18n="[title]ExtBlocks-editor-generation-order-desc" title="">
+                                <span data-i18n="Generation Order">Generation Order</span>
+                                <span class="fa-solid fa-circle-question note-link-span"></span>
+                            </small>
+                            <select name="ExtBlocks-editor-generation-order" class="text_pole">
+                                <option value="before">Before blocks</option>
+                                <option value="after">After blocks</option>
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
             <hr>
 
