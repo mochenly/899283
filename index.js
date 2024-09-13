@@ -5,12 +5,13 @@ import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { getRegexedString } from '../../../extensions/regex/engine.js'
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../../utils.js';
-import { proxies, selected_proxy, oai_settings, setupChatCompletionPromptManager } from '../../../openai.js';
+import { proxies, selected_proxy, oai_settings, setupChatCompletionPromptManager, chat_completion_sources } from '../../../openai.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument} from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { MacrosParser } from '../../../macros.js';
 import { checkWorldInfo } from '../../../world-info.js';
+import { getEventSourceStream } from '../../../sse-stream.js';
 
 const { saveChat } = SillyTavern.getContext();
 
@@ -29,6 +30,7 @@ const defaultSettings = {
     active_set: 'Default',
     active_set_idx: 0,
     proxy_preset: selected_proxy.name,
+    stream: false,
     sets: [
         defaultSet
     ]
@@ -395,7 +397,7 @@ async function checkBlocksInFirstMessage() {
 
     if (blocksStr !== '') {
         blocksStr = blocksStr.replaceAll(/\r/g, '');
-        chat[0].mes = chat[0].mes.replaceAll(allBlocksPurgeRegex, '');
+        chat[0].mes = chat[0].mes.replaceAll(allBlocksPurgeRegex, '').trim();
         await addBlocksToExtra(0, blocksStr);
     }
 }
@@ -612,6 +614,10 @@ async function loadAPI() {
     $('#ExtBlocks-proxy-temperature').val(current_set.temperature);
     $('#ExtBlocks-proxy-system').val(current_set.system_prompt);
     $('#ExtBlocks-proxy-prefill').val(current_set.assistant_prefill);
+    if (ExtBlocks_settings.stream === undefined) {
+        ExtBlocks_settings.stream = defaultSettings.stream;
+    }
+    $('#ExtBlocks-proxy-stream').prop('checked', ExtBlocks_settings.stream);
 }
 
 async function loadSettings() {
@@ -1342,9 +1348,20 @@ function populateBlockMacrosBuffer() {
     });
 }
 
+function getStreamingReply(data) {
+    if (current_set.chat_completion_source == chat_completion_sources.CLAUDE) {
+        return data?.delta?.text || '';
+    } else if (current_set.chat_completion_source == chat_completion_sources.MAKERSUITE) {
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } else {
+        return data.choices[0]?.delta?.content ?? data.choices[0]?.message?.content ?? data.choices[0]?.text ?? '';
+    }
+}
+
 
 async function generateBlocks(prompt) {
     let messages = [{ role: 'user', content: prompt.trim() }];
+    const stream = ExtBlocks_settings.stream ?? false;
     if (current_set.system_prompt !== '') {
         messages.unshift({ role: 'system', content: substituteParamsExtended(current_set.system_prompt.trim()) });
     }
@@ -1352,7 +1369,7 @@ async function generateBlocks(prompt) {
         'messages': messages,
         'model': current_set.model,
         'temperature': current_set.temperature,
-        'stream': false,
+        'stream': stream,
         'top_p': 1,
         'chat_completion_source': current_set.chat_completion_source,
         'max_tokens': 2048
@@ -1375,11 +1392,36 @@ async function generateBlocks(prompt) {
     });
 
     if (response.ok) {
-        const data = await response.json();
+        let data;
 
-        if (data.error) {
-            toastr.error(data.error.message || response.statusText, 'API returned an error');
-            throw new Error(data);
+        if (stream) {
+            const eventStream = getEventSourceStream();
+            response.body.pipeThrough(eventStream);
+            const reader = eventStream.readable.getReader();
+            let text = '';
+            const swipes = [];
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const rawData = value.data;
+                if (rawData === '[DONE]') break;
+                const parsed = JSON.parse(rawData);
+
+                if (Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
+                    const swipeIndex = parsed.choices[0].index - 1;
+                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed);
+                } else {
+                    text += getStreamingReply(parsed);
+                }
+            }
+            data = { content: text, swipes: swipes };
+        } else {
+            data = await response.json();
+
+            if (data.error) {
+                toastr.error(data.error.message || response.statusText, 'API returned an error');
+                throw new Error(data);
+            }
         }
 
         return data;
@@ -1389,10 +1431,14 @@ async function generateBlocks(prompt) {
 }
 
 function extractMessageFromData(data) {
-    if (current_set.chat_completion_source === 'openai' || current_set.chat_completion_source === 'mistralai') {
-        return data.choices[0].message.content.trim();
-    } else if (current_set.chat_completion_source === 'claude') {
-        return data.content[0].text.trim();
+    if (ExtBlocks_settings.stream) {
+        return data.content.trim();
+    } else {
+        if (current_set.chat_completion_source === 'openai' || current_set.chat_completion_source === 'mistralai') {
+            return data.choices[0].message.content.trim();
+        } else if (current_set.chat_completion_source === 'claude') {
+            return data.content[0].text.trim();
+        }
     }
 }
 
@@ -1960,6 +2006,11 @@ async function setupListeners() {
     $('#ExtBlocks-proxy-ccsource').off('click').on('change', function () {
         const value = $('#ExtBlocks-proxy-ccsource').val();
         extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].chat_completion_source = value;
+        saveSettingsDebounced();
+    });
+    $('#ExtBlocks-proxy-stream').off('click').on('change', function () {
+        const value = $('#ExtBlocks-proxy-stream').prop('checked');
+        extension_settings.ExtBlocks.stream = value;
         saveSettingsDebounced();
     });
     $('#ExtBlocks-proxy-preset').off('click').on('change', function () {
