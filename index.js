@@ -1689,10 +1689,12 @@ function parseAccumulationBlock(blockStr) {
     let currentObject = result;
     const stack = [];
 
+    const blockWrapper = getAccumulationBlockWrapper(blockStr);
+
     lines.forEach(line => {
         line = line.trim();
 		
-		if (!line.includes(':')) {
+		if (blockWrapper.upperWrapper.includes(line) || blockWrapper.bottomWrapper.includes(line)) {
             return;
         }
 
@@ -1706,7 +1708,9 @@ function parseAccumulationBlock(blockStr) {
             currentObject = stack.pop();
         } else {
             const [key, value] = line.split(':').map(s => s.trim());
-            if (!isNaN(value)) {
+            if (value === undefined) {
+                currentObject[key] = 1;
+            } else if (!isNaN(value)) {
                 currentObject[key] = parseInt(value, 10);
             } else {
                 currentObject[key] = value;
@@ -1717,30 +1721,23 @@ function parseAccumulationBlock(blockStr) {
     return result;
 }
 
+
 function getAccumulationBlockWrapper(blockStr) {
     const lines = blockStr.trim().split('\n');
     const upperWrapper = [];
     const bottomWrapper = [];
 
-    let crossLine = false;
-    lines.forEach(line => {
-        line = line.trim();
+    for (let idx = 0; idx < lines.length; idx++) {
+        const line = lines[idx].trim();
+        if (line.includes(':') || line.includes(']')) break;
+        upperWrapper.push(line);
+    }
 
-        if (line === '') {
-            return;
-        }
-
-		if (line.includes(':') || line.includes(']')) {
-            crossLine = true;
-            return;
-        } else {
-            if (crossLine) {
-                bottomWrapper.push(line);
-            } else {
-                upperWrapper.push(line);
-            }
-        }
-    });
+    for (let idx = lines.length - 1; idx >= 0; idx--) {
+        const line = lines[idx].trim();
+        if (line.includes(':') || line.includes(']')) break;
+        bottomWrapper.push(line);
+    }
 
     return {
         upperWrapper: upperWrapper.join('\n'),
@@ -1759,6 +1756,8 @@ function accumulationBlockToString(jsonObj, indentLevel = 0) {
             result += `${indent}]\n`;
         } else if (Array.isArray(jsonObj[key])) {
             result += `${indent}${key}: [${jsonObj[key].join(', ')}]\n`;
+        } else if (jsonObj[key] === 1) {
+            result += `${indent}${key}\n`;
         } else {
             result += `${indent}${key}: ${jsonObj[key]}\n`;
         }
@@ -1767,10 +1766,18 @@ function accumulationBlockToString(jsonObj, indentLevel = 0) {
     return result;
 }
 
-function stringifyAccumulationBlock(blockJson, oldBlockStr) {
-    const blockWrapper = getAccumulationBlockWrapper(oldBlockStr);
+function stringifyAccumulationBlock(blockJson, oldBlockStr, block_name) {
+    let blockWrapper;
+    if (oldBlockStr !== '') {
+        blockWrapper = getAccumulationBlockWrapper(oldBlockStr);
+    } else {
+        blockWrapper = {
+            upperWrapper: `<${block_name}>`,
+            bottomWrapper: `</${block_name}>`
+        }
+    }
     const newBlockStr = accumulationBlockToString(blockJson);
-    return `${blockWrapper.upperWrapper}\n${newBlockStr}\n${blockWrapper.bottomWrapper}`;
+    return `${blockWrapper.upperWrapper}\n${newBlockStr.trim()}\n${blockWrapper.bottomWrapper}`;
 }
 
 async function handleBlocksAccumulation(messageId, triggeredAccumulationBlocks) {
@@ -1781,7 +1788,7 @@ async function handleBlocksAccumulation(messageId, triggeredAccumulationBlocks) 
         const blockJson = parseAccumulationBlock(blockStr);
         const blockUpdater = getMultiBlockContentFromMessage(chat[messageId].mes, block.updater_name);
         const updatedBlock = applyOperationsToAccumulationBlock(blockJson, blockUpdater);
-        const updatedBlockStr = stringifyAccumulationBlock(updatedBlock, blockStr);
+        const updatedBlockStr = stringifyAccumulationBlock(updatedBlock, blockStr, block.name);
         blocks.push(updatedBlockStr);
     };
 
