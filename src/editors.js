@@ -6,6 +6,7 @@ import { ElementTemplate, ContextType, templates_path } from './common.js';
 import { interactiveSortData } from './utils.js';
 import { saveBlock } from './blocks.js';
 
+
 export async function openEditor(existingId, isScoped) {
     const editorHtml = $(await renderExtensionTemplateAsync(templates_path, ElementTemplate.GENERATED_EDITOR));
     const array = (isScoped ? characters[this_chid]?.data?.extensions?.ExtBlocks : extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].global_blocks) ?? [];

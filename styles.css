@@ -69,6 +69,22 @@
     margin-bottom: 10px;
 }
 
+#ExtBlocks-editor-template {
+    height: 100%;
+}
+
+.ExtBlocks-editor {
+    height: 100%;
+}
+
+.ExtBlocks-editor-header {
+    height: 4%;
+}
+
+.ExtBlocks-editor-body {
+    height: 96%;
+}
+
 .ExtBlocks-editor-settings {
     width: 60%;
 }
@@ -78,7 +94,7 @@
 }
 
 .ExtBlocks-editor-context-settings {
-    height: 95%;
+    height: 85%;
 }
 
 .ExtBlocks-editor-context-builder {
