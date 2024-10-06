@@ -105,6 +105,14 @@
     height: 30%;
 }
 
+.ExtBlocks-scripteditor-settings {
+    width: 70%;
+}
+
+.ExtBlocks-scripteditor-states {
+    width: 30%;
+}
+
 .ExtBlocks-block-label {
     align-items: center;
     border: 1px solid var(--SmartThemeBorderColor);

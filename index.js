@@ -19,9 +19,9 @@ import { changeSet, importSet, refreshSetList } from './src/sets.js';
 import { loadAPI } from './src/api.js';
 import { handleUserTrigger, handleCharTrigger,
     runBlockGenerationCallback, appendStringToExtraCallback, purgeExtraCallback, runBlockRegenerationCallback,
-    runRewriteBlocksCallback
+    runRewriteBlocksCallback, runScriptsExecutionCallback
  } from './src/handlers.js';
-import { openEditor, openAccumulationEditor } from './src/editors.js';
+import { openEditor, openAccumulationEditor, openScriptEditor } from './src/editors.js';
 
 
 function addEditButtons() {
@@ -203,6 +203,22 @@ async function setupListeners() {
             return;
         }
         openAccumulationEditor(false, true);
+    });
+
+    $('#ExtBlocks-blocks-global-openscripteditor').off('click').on('click', () => {
+        openScriptEditor(false, false);
+    });
+    $('#ExtBlocks-blocks-scoped-openscripteditor').off('click').on('click', () => {
+        if (this_chid === undefined) {
+            toastr.error('No character selected.');
+            return;
+        }
+
+        if (selected_group) {
+            toastr.error('Cannot edit embedded blocks in group chats.');
+            return;
+        }
+        openScriptEditor(false, true);
     });
 
     $('#ExtBlocks-blocks-global-import-file').on('change', async function () {
@@ -411,6 +427,20 @@ jQuery(async () => {
             ),
         ],
         helpString: 'Rewrites the last message using rewriting blocks.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: ExtSlashCommand.EXECUTE_SCRIPT,
+        callback: runScriptsExecutionCallback,
+        returns: 'void',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'script block name(s)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            })
+        ],
+        helpString: 'Executes script blocks.',
     }));
 
     console.log(`${defaultExtPrefix} extension loaded`);

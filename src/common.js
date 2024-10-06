@@ -51,6 +51,11 @@ export const ContextType = {
     PREVIOUS_BLOCK: 'previous_block'
 }
 
+export const ScriptType = {
+    ST: 'stscript',
+    JS: 'js'
+}
+
 export const MessageRole = {
     SYSTEM: 'system',
     USER: 'user',
@@ -64,13 +69,15 @@ export const ElementTemplate = {
     NEW_SET_POPUP: 'new_set_popup',
     STORAGE_EDITOR: 'storage_editor',
     GENERATED_EDITOR: 'editor',
-    ACCUMULATION_EDITOR: 'accumulation_editor'
+    ACCUMULATION_EDITOR: 'accumulation_editor',
+    SCRIPT_EDITOR: 'script_editor'
 }
 
 export const ExtSlashCommand = {
     GENERATE: 'extblocks-generate',
     REGENERATE: 'extblocks-regenerate',
     REWRITE: 'extblocks-rewrite',
+    EXECUTE_SCRIPT: 'extblocks-execute-script',
     STORAGE_APPEND: 'extblocks-storage-append',
     STORAGE_PURGE: 'extblocks-storage-purge',
     STORAGE_EXPORT: 'extblocks-storage-export',

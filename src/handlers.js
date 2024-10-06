@@ -4,24 +4,28 @@ import { substituteParamsExtended, this_chid, eventSource, event_types, chat,
 import { defaultExtPrefix, extStates, BlockType } from './common.js';
 import { getBlockCombinedContext, updateBlocksDisplay, groupBlocksByContext, addBlocksToExtra,
     getAllEnabledBlocks, purgeBlocksExtra, getPreviousBlockMessageId, injectBlock, getAllGeneratedBlocks,
-    getAllRewriteBlocks, getAllPreviousBlocks
+    getAllRewriteBlocks, getAllPreviousBlocks, getAllScriptBlocks
  } from './blocks.js';
 import { checkAllMacros } from './macros.js';
 import { generateBlocks } from './api.js';
 import { extractMessageFromData } from './api.js';
 import { getMultiBlockContentFromMessage, getBlockFromMessage } from './utils.js';
 import { handleBlocksAccumulation } from './accumulationBlocks.js';
+import { handleScriptExecution } from './scriptsBlocks.js';
 
 
 export async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}, is_separate = false) {
-    const { generatedBlocks, rewriteBlocks } = triggeredBlocks.reduce((acc, block) => {
+    const { generatedBlocks, rewriteBlocks, scriptBlocks } = triggeredBlocks.reduce((acc, block) => {
         if (block.block_type === BlockType.REWRITE) {
             acc.rewriteBlocks.push(block);
-        } else {
+        } else if (block.block_type === BlockType.SCRIPT) {
+            acc.scriptBlocks.push(block);
+        }
+        else {
             acc.generatedBlocks.push(block);
         }
         return acc;
-    }, { generatedBlocks: [], rewriteBlocks: [] });
+    }, { generatedBlocks: [], rewriteBlocks: [], scriptBlocks: [] });
 
     async function generateRewriteBlocks(generation_order) {
         if (rewriteBlocks.length > 0 && rewriteBlocks.some(block => block.generation_order === generation_order)) {
@@ -48,6 +52,16 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
         }
     }
 
+    async function executeScriptBlocks(execution_order) {
+        if (scriptBlocks.length > 0) {
+            const currentScriptBlocks = scriptBlocks.filter(block => block.execution_order === execution_order);
+            if (currentScriptBlocks.length !== 0) {
+                await handleScriptExecution(currentScriptBlocks);
+            }
+        }
+    }
+
+    await executeScriptBlocks('before');
     await generateRewriteBlocks('before');
 
     const groupedBlocks = groupBlocksByContext(generatedBlocks);
@@ -103,6 +117,7 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
     }
 
     await generateRewriteBlocks('after');
+    await executeScriptBlocks('after');
 }
 
 
@@ -148,7 +163,7 @@ export async function handleUserTrigger(messageId, is_swipe = false) {
     }
     const allBlocks = getAllEnabledBlocks();
     allBlocks.forEach(blockConfig => {
-        if (blockConfig.inject_block && blockConfig.block_type !== BlockType.REWRITE) {
+        if (blockConfig.inject_block && blockConfig.block_type !== BlockType.REWRITE && blockConfig.block_type !== BlockType.SCRIPT) {
             const mes_id = getPreviousBlockMessageId(messageId, blockConfig, true);
             if (mes_id >= 0) {
                 if (chat[mes_id].extra && chat[mes_id].extra.extblocks) {
@@ -217,6 +232,24 @@ export async function runRewriteBlocksCallback(args, additional_prompt) {
         }
         let is_separate = false;
         await handleBlocksGeneration(messageId, false, allBlocks, blocks, additionalMacro, is_separate);
+    } else {
+        toastr.warning(`Blocks not found.`);
+    }
+    return '';
+}
+
+export async function runScriptsExecutionCallback(args, _) {
+    if (!args.name) {
+        toastr.warning(`No block name provided`);
+        return '';
+    }
+    const block_names = args.name.split(',').map((name) => name.trim());
+
+    const allBlocks = getAllScriptBlocks();
+    const blocks = allBlocks.filter((e) => block_names.includes(e.name));
+    if (blocks.length > 0) {
+        const messageId = chat.length - 1;
+        await handleBlocksGeneration(messageId, false, allBlocks, blocks, {}, false);
     } else {
         toastr.warning(`Blocks not found.`);
     }

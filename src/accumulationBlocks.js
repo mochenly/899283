@@ -1,6 +1,7 @@
 import { chat } from '../../../../../script.js';
 
 import { addBlocksToExtra, getPreviousBlockContextUnconditional } from './blocks.js';
+import { getMultiBlockContentFromMessage } from './utils.js';
 
 
 export function applyOperationsToAccumulationBlock(mainBlock, operationsStr) {

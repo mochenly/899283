@@ -9,7 +9,7 @@ import { selfReloadCurrentChat, getRegexForBlock, getBlockEncloseRegex, updateOr
     getBlockFromMessageWithRegex, getBlockFromMessage
  } from './utils.js';
 import { insertBlockMacros, deleteBlockMacros, checkAllMacros } from './macros.js';
-import { openEditor, openAccumulationEditor } from './editors.js';
+import { openEditor, openAccumulationEditor, openScriptEditor } from './editors.js';
 
 
 export async function createRegexForBlocks(forceReload = false) {
@@ -249,7 +249,7 @@ export async function importBlock(file, isScoped) {
 
         saveSettingsDebounced();
         await loadBlocks();
-        if (this_chid !== undefined && block.block_type !== BlockType.REWRITE) {
+        if (this_chid !== undefined && block.block_type !== BlockType.REWRITE && block.block_type !== BlockType.SCRIPT) {
             insertBlockMacros(block);
         }
         
@@ -300,7 +300,7 @@ export async function saveBlock(block, index, isScoped) {
 
     saveSettingsDebounced();
     await loadBlocks();
-    if (this_chid !== undefined && block.block_type !== BlockType.REWRITE) {
+    if (this_chid !== undefined && block.block_type !== BlockType.REWRITE && block.block_type !== BlockType.SCRIPT) {
         insertBlockMacros(block);
     }
 }
@@ -319,7 +319,7 @@ export async function deleteBlock({ id, isScoped }) {
 
         saveSettingsDebounced();
         await loadBlocks();
-        if (this_chid !== undefined) {
+        if (this_chid !== undefined && block.block_type !== BlockType.REWRITE && block.block_type !== BlockType.SCRIPT) {
             deleteBlockMacros(block_name);
         }
     }
@@ -384,6 +384,7 @@ export async function loadBlocks() {
 
         if (block_type === BlockType.GENERATED) {
             blockHtml.find('.ExtBlocks-block-atype-icon').hide();
+            blockHtml.find('.ExtBlocks-block-stype-icon').hide();
             blockHtml.find('.ExtBlocks-block-rtype-icon').hide();
             editor_func = openEditor;
             blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
@@ -393,11 +394,13 @@ export async function loadBlocks() {
             });
         } else if (block_type === BlockType.ACCUMULATION) {
             blockHtml.find('.ExtBlocks-block-gtype-icon').hide();
+            blockHtml.find('.ExtBlocks-block-stype-icon').hide();
             blockHtml.find('.ExtBlocks-block-rtype-icon').hide();
             blockHtml.find('.export_prompt_ExtBlocks').hide();
             editor_func = openAccumulationEditor;
         } else if (block_type === BlockType.REWRITE) {
             blockHtml.find('.ExtBlocks-block-gtype-icon').hide();
+            blockHtml.find('.ExtBlocks-block-stype-icon').hide();
             blockHtml.find('.ExtBlocks-block-atype-icon').hide();
             editor_func = openEditor;
             blockHtml.find('.export_prompt_ExtBlocks').on('click', async function () {
@@ -405,6 +408,12 @@ export async function loadBlocks() {
                 const fileData = JSON.stringify({fullPrompt: await checkAllMacros(getSingleBlockFullPrompt(block))}, null, 4);
                 download(fileData, fileName, 'application/json');
             });
+        } else if (block_type === BlockType.SCRIPT) {
+            blockHtml.find('.ExtBlocks-block-gtype-icon').hide();
+            blockHtml.find('.ExtBlocks-block-rtype-icon').hide();
+            blockHtml.find('.ExtBlocks-block-atype-icon').hide();
+            blockHtml.find('.export_prompt_ExtBlocks').hide();
+            editor_func = openScriptEditor;
         }
 
         blockHtml.attr('id', block.id);
@@ -535,7 +544,7 @@ export function getPreviousBlockMessageId(messageId, blockConfig, may_current = 
         const block_regex = getBlockEncloseRegex(blockConfig.name);
         const lastMessageId = chat.slice(0, messageId + 1).findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
         return lastMessageId;
-    } else if (blockConfig.block_type === BlockType.REWRITE) {
+    } else if (blockConfig.block_type === BlockType.REWRITE || block.block_type !== BlockType.SCRIPT) {
         return -1;
     } else {
         const block_period = blockConfig.period;
@@ -598,14 +607,7 @@ export function injectBlock(block, blockConfig) {
 }
 
 export function injectEmptyBlock(blockConfig) {
-    const key = `${defaultExtPrefix} ${blockConfig.name}`;
-    const position = blockConfig.injection_position;
-    const role = blockConfig.injection_role;
-    let depth = blockConfig.injection_depth;
-    if (depth < 0) {
-        depth = chat.length - depth;
-    }
-    setExtensionPrompt(key, '', position, depth, true, role);
+    injectBlock('', blockConfig);
 }
 
 export function getAllBlocks() {
@@ -615,12 +617,17 @@ export function getAllBlocks() {
 
 export function getAllGeneratedBlocks() {
     const allBlocks = getAllBlocks();
-    return allBlocks.filter(block => block.block_type !== BlockType.ACCUMULATION && block.block_type !== BlockType.REWRITE);
+    return allBlocks.filter(block => block.block_type !== BlockType.ACCUMULATION && block.block_type !== BlockType.REWRITE && block.block_type !== BlockType.SCRIPT);
 }
 
 export function getAllRewriteBlocks() {
     const allBlocks = getAllBlocks();
     return allBlocks.filter(block => block.block_type === BlockType.REWRITE);
+}
+
+export function getAllScriptBlocks() {
+    const allBlocks = getAllBlocks();
+    return allBlocks.filter(block => block.block_type === BlockType.SCRIPT);
 }
 
 export function getAllEnabledBlocks() {

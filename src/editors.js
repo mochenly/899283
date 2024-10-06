@@ -478,3 +478,79 @@ export async function openAccumulationEditor(existingId, isScoped) {
         saveBlock(newBlock, existingBlockIndex, isScoped);
     }
 }
+
+export async function openScriptEditor(existingId, isScoped) {
+    const editorHtml = $(await renderExtensionTemplateAsync(templates_path, ElementTemplate.SCRIPT_EDITOR));
+    const array = (isScoped ? characters[this_chid]?.data?.extensions?.ExtBlocks : extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].global_blocks) ?? [];
+    
+    function changeTriggerPeriodicity(trigger_periodicity) {
+        if (trigger_periodicity === "keyword") {
+            editorHtml.find('.ExtBlocks-scripteditor-period-wrapper').hide();
+            editorHtml.find('.ExtBlocks-scripteditor-keyword-wrapper').show();
+        } else {
+            editorHtml.find('.ExtBlocks-scripteditor-period-wrapper').show();
+            editorHtml.find('.ExtBlocks-scripteditor-keyword-wrapper').hide();
+        }
+    }
+    
+    let existingBlockIndex = -1;
+    if (existingId) {
+        existingBlockIndex = array.findIndex((block) => block.id === existingId);
+        if (existingBlockIndex !== -1) {
+            const existingBlock = array[existingBlockIndex];
+            if (existingBlock.name) {
+                editorHtml.find('.ExtBlocks-scripteditor-block-name').val(existingBlock.name);
+            } else {
+                toastr.error('This block doesn\'t have a name! Please delete it.');
+                return;
+            }
+
+            editorHtml.find(`select[name="ExtBlocks-scripteditor-script-type"]`).val(existingBlock.script_type ?? 'stscript');
+            editorHtml.find('.ExtBlocks-scripteditor-script').val(existingBlock.script ?? '');
+
+            editorHtml.find('input[name="user_message"]').prop('checked', existingBlock.user_message ?? false);
+            editorHtml.find('input[name="char_message"]').prop('checked', existingBlock.char_message ?? true);
+
+            const block_keyword = existingBlock.keyword;
+            const trigger_periodicity = (block_keyword && block_keyword !== '') ? "keyword" : "periodic";
+            editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).val(trigger_periodicity);
+            editorHtml.find('input[name="period"]').val(existingBlock.period ?? 2);
+            editorHtml.find('input[name="keyword"]').val(block_keyword ?? '');
+            changeTriggerPeriodicity(trigger_periodicity);
+
+            editorHtml.find('input[name="disabled"]').prop('checked', existingBlock.disabled ?? false);
+            editorHtml.find(`select[name="ExtBlocks-editor-execution-order"]`).val(existingBlock.execution_order ?? 'before');
+        }
+    } else {
+        editorHtml.find('input[name="disabled"]').prop('checked', false);
+        editorHtml.find('input[name="char_message"]').prop('checked', true);
+        editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).val('periodic');
+        changeTriggerPeriodicity('periodic');
+    }
+
+    editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).off('click').on('change', (event) => {
+        const value = editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).val();
+        changeTriggerPeriodicity(value);
+    });
+
+    const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save', wide: true });
+    if (popupResult) {
+        const trigger_periodicity = editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).val();
+        const block_keyword = trigger_periodicity === 'keyword' ? String(editorHtml.find('input[name="keyword"]').val() || '') : '';
+        const newBlock = {
+            id: existingId ? String(existingId) : uuidv4(),
+            block_type: 'script',
+            name: String(editorHtml.find('.ExtBlocks-scripteditor-block-name').val()),
+            script_type: editorHtml.find(`select[name="ExtBlocks-scripteditor-script-type"]`).val(),
+            script: String(editorHtml.find('.ExtBlocks-scripteditor-script').val()),
+            disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
+            user_message: editorHtml.find('input[name="user_message"]').prop('checked'),
+            char_message: editorHtml.find('input[name="char_message"]').prop('checked'),
+            period: parseInt(String(editorHtml.find('input[name="period"]').val() || 2)),
+            keyword: block_keyword,
+            execution_order: editorHtml.find(`select[name="ExtBlocks-editor-execution-order"]`).val() || 'before'
+        };
+
+        saveBlock(newBlock, existingBlockIndex, isScoped);
+    }
+}
