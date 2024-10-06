@@ -1,6 +1,6 @@
 import { SlashCommandParser } from '../../../../slash-commands/SlashCommandParser.js';
 
-import { ScriptType } from './common.js';
+import { ScriptType, defaultExtPrefix } from './common.js';
 
 
 const context = SillyTavern.getContext();
@@ -13,7 +13,11 @@ async function executeST(text) {
 
 
 function executeJS(text) {
-    eval(text);
+    try {
+        eval(text);
+    } catch (error) {
+        toastr.error(`${defaultExtPrefix} An error occurred in script: ${error.message}`);
+    }
 }
 
 export async function handleScriptExecution(triggeredScriptBlocks) {

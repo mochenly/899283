@@ -2,7 +2,7 @@ import { callPopup, this_chid, characters } from '../../../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../../../extensions.js';
 import { download, getFileText, uuidv4 } from '../../../../utils.js';
 
-import { ElementTemplate, ContextType, templates_path } from './common.js';
+import { ElementTemplate, ContextType, templates_path, BlockType } from './common.js';
 import { interactiveSortData } from './utils.js';
 import { saveBlock } from './blocks.js';
 
@@ -237,7 +237,7 @@ export async function openEditor(existingId, isScoped) {
         const injectSettings = editorHtml.find('#ExtBlocks-editor-inject-settings');
         const generationOrderWrapper = editorHtml.find('#ExtBlocks-editor-generation-order-wrapper');
     
-        if (blockType === 'rewrite') {
+        if (blockType === BlockType.REWRITE) {
             injectSettings.hide();
             hideDisplayWrapper.hide();
             injectBlockWrapper.hide();
@@ -263,7 +263,7 @@ export async function openEditor(existingId, isScoped) {
                 return;
             }
 
-            const blockType = existingBlock.block_type ?? 'generated'
+            const blockType = existingBlock.block_type ?? BlockType.GENERATED;
             editorHtml.find(`select[name="ExtBlocks-editor-block-type"]`).val(blockType);
             editorHtml.find('.ExtBlocks-editor-block-template').val(existingBlock.template ?? '');
             editorHtml.find('.ExtBlocks-editor-block-prompt').val(existingBlock.prompt ?? '');
@@ -462,7 +462,7 @@ export async function openAccumulationEditor(existingId, isScoped) {
     if (popupResult) {
         const newBlock = {
             id: existingId ? String(existingId) : uuidv4(),
-            block_type: 'accumulation',
+            block_type: BlockType.ACCUMULATION,
             name: String(editorHtml.find('.ExtBlocks-accumulationeditor-block-name').val()),
             updater_name: String(editorHtml.find('.ExtBlocks-accumulationeditor-blockupdater-name').val()),
             disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
@@ -492,7 +492,7 @@ export async function openScriptEditor(existingId, isScoped) {
             editorHtml.find('.ExtBlocks-scripteditor-keyword-wrapper').hide();
         }
     }
-    
+
     let existingBlockIndex = -1;
     if (existingId) {
         existingBlockIndex = array.findIndex((block) => block.id === existingId);
@@ -539,7 +539,7 @@ export async function openScriptEditor(existingId, isScoped) {
         const block_keyword = trigger_periodicity === 'keyword' ? String(editorHtml.find('input[name="keyword"]').val() || '') : '';
         const newBlock = {
             id: existingId ? String(existingId) : uuidv4(),
-            block_type: 'script',
+            block_type: BlockType.SCRIPT,
             name: String(editorHtml.find('.ExtBlocks-scripteditor-block-name').val()),
             script_type: editorHtml.find(`select[name="ExtBlocks-scripteditor-script-type"]`).val(),
             script: String(editorHtml.find('.ExtBlocks-scripteditor-script').val()),
