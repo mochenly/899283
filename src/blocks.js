@@ -310,7 +310,8 @@ export async function deleteBlock({ id, isScoped }) {
 
     const existingBlockIndex = array.findIndex((block) => block.id === id);
     if (!existingBlockIndex || existingBlockIndex !== -1) {
-        const block_name = array[existingBlockIndex].name;
+        const block = array[existingBlockIndex];
+        const block_name = block.name;
         array.splice(existingBlockIndex, 1);
 
         if (isScoped) {
