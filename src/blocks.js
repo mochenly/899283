@@ -545,7 +545,7 @@ export function getPreviousBlockMessageId(messageId, blockConfig, may_current = 
         const block_regex = getBlockEncloseRegex(blockConfig.name);
         const lastMessageId = chat.slice(0, messageId + 1).findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
         return lastMessageId;
-    } else if (blockConfig.block_type === BlockType.REWRITE || block.block_type !== BlockType.SCRIPT) {
+    } else if (blockConfig.block_type === BlockType.REWRITE || blockConfig.block_type !== BlockType.SCRIPT) {
         return -1;
     } else {
         const block_period = blockConfig.period;
