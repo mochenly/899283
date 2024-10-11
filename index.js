@@ -19,7 +19,7 @@ import { changeSet, importSet, refreshSetList } from './src/sets.js';
 import { loadAPI } from './src/api.js';
 import { handleUserTrigger, handleCharTrigger,
     runBlockGenerationCallback, appendStringToExtraCallback, purgeExtraCallback, runBlockRegenerationCallback,
-    runRewriteBlocksCallback, runScriptsExecutionCallback
+    runRewriteBlocksCallback, runScriptsExecutionCallback, exportBlocksCallback
  } from './src/handlers.js';
 import { openEditor, openAccumulationEditor, openScriptEditor } from './src/editors.js';
 
