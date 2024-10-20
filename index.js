@@ -8,7 +8,7 @@ import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument} from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
-import { defaultExtPrefix, extStates, path, templates_path, ElementTemplate, ExtSlashCommand, editButton, extName } from './src/common.js';
+import { defaultExtPrefix, extStates, path, templates_path, ElementTemplate, ExtSlashCommand, editButton, extName, defaultSettings } from './src/common.js';
 import { interactiveSortData, selfReloadCurrentChat, getDefaultSet, updateOrInsert, refreshSettings } from './src/utils.js';
 import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocksFromExtra,
     purgeBlocksExtra, addBlocksToExtra, loadBlocks, updateBlocksDisplay, checkBlocksInFirstMessage,
