@@ -3,13 +3,13 @@ import { saveSettingsDebounced, callPopup, this_chid, characters, eventSource,
 import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { proxies } from '../../../openai.js';
-import { download } from '../../../utils.js';
+import { download, uuidv4 } from '../../../utils.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument} from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
 import { defaultExtPrefix, extStates, path, templates_path, ElementTemplate, ExtSlashCommand, editButton, extName, defaultSettings } from './src/common.js';
-import { interactiveSortData, selfReloadCurrentChat, getDefaultSet, updateOrInsert, refreshSettings } from './src/utils.js';
+import { interactiveSortData, selfReloadCurrentChat, getDefaultSet, updateOrInsert, refreshSettings, getRegexForBlock } from './src/utils.js';
 import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocksFromExtra,
     purgeBlocksExtra, addBlocksToExtra, loadBlocks, updateBlocksDisplay, checkBlocksInFirstMessage,
     firstSwipeBlockExtra, swipeBlockExtra
@@ -40,13 +40,25 @@ function addEditButtonToLastMessage() {
     }
 }
 
+function checkSettings() {
+    const extBlocksSettings = extension_settings.ExtBlocks;
+    Object.assign(extBlocksSettings, {
+        autohide_display: extBlocksSettings.autohide_display ?? defaultSettings.autohide_display,
+        autohide_prompt: extBlocksSettings.autohide_prompt ?? defaultSettings.autohide_prompt,
+    });
+    saveSettingsDebounced();
+}
+
 async function loadSettings() {
     if (!extension_settings.ExtBlocks) {
         extension_settings.ExtBlocks = defaultSettings;
     };
+    checkSettings()
     await refreshSettings();
 
     $('#extblocks_is_enabled').prop('checked', extStates.ExtBlocks_settings.extblocks_is_enabled);
+    $('#ExtBlocks-autoregex-display').val(extension_settings.ExtBlocks.autohide_display);
+    $('#ExtBlocks-autoregex-prompt').val(extension_settings.ExtBlocks.autohide_prompt);
 
     refreshSetList();
 
@@ -130,6 +142,66 @@ async function setupListeners() {
             await changeSet(set_idx);
         }
 
+    });
+
+    $('#ExtBlocks-autoregex-toggle').off('click').on('click', function () {
+        $('#ExtBlocks-autoregex').slideToggle(200, 'swing');
+    });
+    $('#ExtBlocks-autoregex-display').off('click').on('input', function () {
+        const value = $('#ExtBlocks-autoregex-display').val();
+        extension_settings.ExtBlocks.autohide_display = String(value);
+        saveSettingsDebounced();
+    });
+    $('#ExtBlocks-autoregex-prompt').off('click').on('input', function () {
+        const value = $('#ExtBlocks-autoregex-prompt').val();
+        extension_settings.ExtBlocks.autohide_prompt = String(value);
+        saveSettingsDebounced();
+    });
+    $('#ExtBlocks-autoregex-apply').off('click').on('click', async function () {
+        const hide_display_blocks = extension_settings.ExtBlocks.autohide_display.split(',').map((name) => name.trim());
+        const hide_prompt_blocks = extension_settings.ExtBlocks.autohide_prompt.split(',').map((name) => name.trim());
+        extension_settings.regex = extension_settings.regex.filter(item => !item.scriptName.includes(defaultExtPrefix));
+
+        if (hide_display_blocks.length != 0 && hide_display_blocks[0] !== '') {
+            const hideDisplayScript = {
+                id: uuidv4(),
+                scriptName: `${defaultExtPrefix} Hide from display`,
+                findRegex: `/${hide_display_blocks.map(name => getRegexForBlock(name)).join('|')}/g`,
+                replaceString: '',
+                trimStrings: [],
+                placement: [1, 2],
+                disabled: false,
+                markdownOnly: true,
+                promptOnly: false,
+                runOnEdit: true,
+                substituteRegex: false,
+                minDepth: null,
+                maxDepth: null,
+            };
+            extension_settings.regex.push(hideDisplayScript);
+        }
+
+        if (hide_prompt_blocks.length != 0 && hide_prompt_blocks[0] !== '') {
+            const hidePromptScript = {
+                id: uuidv4(),
+                scriptName: `${defaultExtPrefix} Hide from prompt`,
+                findRegex: `/${hide_prompt_blocks.map(name => getRegexForBlock(name)).join('|')}/g`,
+                replaceString: '',
+                trimStrings: [],
+                placement: [1, 2],
+                disabled: false,
+                markdownOnly: false,
+                promptOnly: true,
+                runOnEdit: true,
+                substituteRegex: false,
+                minDepth: null,
+                maxDepth: null,
+            };
+            extension_settings.regex.push(hidePromptScript);
+        }
+
+        saveSettingsDebounced();
+        await selfReloadCurrentChat();
     });
 
 

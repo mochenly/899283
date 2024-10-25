@@ -16,6 +16,8 @@ export const defaultSettings = {
     active_set_idx: 0,
     proxy_preset: selected_proxy.name,
     stream: false,
+    autohide_display: '',
+    autohide_prompt: '',
     sets: [ defaultSet ]
 };
 

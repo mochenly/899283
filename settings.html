@@ -71,6 +71,7 @@
                         <option value="mistral-large-latest">mistral-large-latest</option>
                         <option value="mistral-medium-latest">mistral-medium-latest</option>
                         <option value="aws-mistral-large">aws-mistral-large</option>
+                        <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022</option>
                         <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet-20240620</option>
                         <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                         <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
@@ -105,6 +106,33 @@
                         Assistant Prefill:
                     </label>
                     <textarea class="textarea_compact text_pole" id="ExtBlocks-proxy-prefill" rows="3"></textarea>
+                </div>
+            
+            </div>
+
+            <div id="ExtBlocks-autoregex-toggle" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-autoregex-tip" title="Hiding blocks from messages by their names.">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span data-i18n="ExtBlocks-autoregex-title">Autoregex</span>
+            </div>
+
+            <div id="ExtBlocks-autoregex" style="display:none;">
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-autoregex-display" data-i18n="Blocks to hide">
+                        Hide from display (comma separated blocks names):
+                    </label>
+                    <textarea class="textarea_compact text_pole" id="ExtBlocks-autoregex-display" rows="3"></textarea>
+                </div>
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-autoregex-prompt" data-i18n="Blocks to hide">
+                        Hide from prompt (comma separated blocks names):
+                    </label>
+                    <textarea class="textarea_compact text_pole" id="ExtBlocks-autoregex-prompt" rows="3"></textarea>
+                </div>
+
+                <div id="ExtBlocks-autoregex-apply" class="menu_button menu_button_icon" title="">
+                    <small data-i18n="ExtBlocks-autoregex-apply">Apply</small>
                 </div>
             
             </div>

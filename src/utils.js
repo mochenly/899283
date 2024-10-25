@@ -17,12 +17,30 @@ export async function refreshSettings() {
     extStates.current_set = extStates.ExtBlocks_settings.sets[extStates.ExtBlocks_settings.active_set_idx];
 }
 
+export function checkAttributesInBlockName(block_name) {
+    if (block_name.includes('=')) {
+        const indexOfFirstEqual = str.indexOf('=');
+        bottom_block_name = str.substring(0, indexOfFirstEqual).trim().split(/\s+/).slice(0, -1).join(' ');
+        return {
+            upper_block_name: block_name,
+            bottom_block_name: bottom_block_name
+        }
+    } else {
+        return {
+            upper_block_name: block_name,
+            bottom_block_name: block_name
+        }
+    }
+}
+
 export function getRegexForBlock(block_name) {
-    return `(\\n*<${block_name}>[\\s\\S]*?<\\/${block_name}>\\n*)`;
+    const block_names = checkAttributesInBlockName(block_name);
+    return `(\\n*<${block_names.upper_block_name}(\\s+[^>]+)?>[\\s\\S]*?<\\/${block_names.bottom_block_name}>)`;
 }
 
 export function getBlockEncloseRegex(block_name) {
-    const block_regex = new RegExp(`(?:[\\s\\S]*?(?=<${block_name}>)|$)|(?<=<\\/${block_name}>|^)[\\s\\S]*`, "g");
+    const block_names = checkAttributesInBlockName(block_name);
+    const block_regex = new RegExp(`(?:[\\s\\S]*?(?=<${block_names.upper_block_name}(\\s+[^>]+)?>)|$)|(?<=<\\/${block_names.bottom_block_name}>|^)[\\s\\S]*`, "g");
     return block_regex;
 }
 
@@ -38,7 +56,8 @@ export function getBlockFromMessage(message, block_name) {
 }
 
 export function getMultiBlockContentFromMessage(message, block_name) {
-    const block_regex = new RegExp(`<${block_name}>\\n*|<\\/${block_name}>|(?:(?<=^)|(?<=<\\/${block_name}>))([\\s\\S]*?)(?=<${block_name}>|$)`, "g");
+    const block_names = checkAttributesInBlockName(block_name);
+    const block_regex = new RegExp(`<${block_names.upper_block_name}(\\s+[^>]+)?>\\n*|<\\/${block_names.bottom_block_name}>|(?:(?<=^)|(?<=<\\/${block_names.bottom_block_name}>))([\\s\\S]*?)(?=<${block_names.upper_block_name}(\\s+[^>]+)?>|$)`, "g");
     return getBlockFromMessageWithRegex(message, block_regex).trim();
 }
 
