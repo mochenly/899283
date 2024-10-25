@@ -20,7 +20,7 @@ export async function refreshSettings() {
 export function checkAttributesInBlockName(block_name) {
     if (block_name.includes('=')) {
         const indexOfFirstEqual = block_name.indexOf('=');
-        bottom_block_name = str.substring(0, indexOfFirstEqual).trim().split(/\s+/).slice(0, -1).join(' ');
+        bottom_block_name = block_name.substring(0, indexOfFirstEqual).trim().split(/\s+/).slice(0, -1).join(' ');
         return {
             upper_block_name: block_name,
             bottom_block_name: bottom_block_name
