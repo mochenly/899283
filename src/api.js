@@ -52,6 +52,10 @@ export async function generateBlocks(prompt) {
     generate_data['reverse_proxy'] = preset.url;
     generate_data['proxy_password'] = preset.password;
 
+    if (extStates.current_set.chat_completion_source === chat_completion_sources.MAKERSUITE) {
+        generate_data['use_makersuite_sysprompt'] = true;
+    }
+
     if (extStates.current_set.chat_completion_source === chat_completion_sources.CLAUDE) {
         generate_data['claude_use_sysprompt'] = true;
         generate_data['assistant_prefill'] = substituteParamsExtended(extStates.current_set.assistant_prefill);
