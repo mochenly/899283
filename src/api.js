@@ -114,7 +114,7 @@ export function extractMessageFromData(data) {
     if (extStates.ExtBlocks_settings.stream) {
         return data.content.trim();
     } else {
-        if (extStates.current_set.chat_completion_source === chat_completion_sources.OPENAI || extStates.current_set.chat_completion_source === chat_completion_sources.MISTRALAI) {
+        if (extStates.current_set.chat_completion_source === chat_completion_sources.OPENAI || extStates.current_set.chat_completion_source === chat_completion_sources.MISTRALAI || extStates.current_set.chat_completion_source === chat_completion_sources.MAKERSUITE) {
             return data.choices[0].message.content.trim();
         } else if (extStates.current_set.chat_completion_source === chat_completion_sources.CLAUDE) {
             return data.content[0].text.trim();
