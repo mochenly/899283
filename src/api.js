@@ -49,8 +49,10 @@ export async function generateBlocks(prompt) {
         'max_tokens': 2048
     };
     const preset = proxies.find(p => p.name === extStates.ExtBlocks_settings.proxy_preset);
-    generate_data['reverse_proxy'] = preset.url;
-    generate_data['proxy_password'] = preset.password;
+    if (extStates.current_set.chat_completion_source !== chat_completion_sources.OPENROUTER) {
+        generate_data['reverse_proxy'] = preset.url;
+        generate_data['proxy_password'] = preset.password;
+    }
 
     if (extStates.current_set.chat_completion_source === chat_completion_sources.MAKERSUITE) {
         generate_data['use_makersuite_sysprompt'] = true;
@@ -114,10 +116,10 @@ export function extractMessageFromData(data) {
     if (extStates.ExtBlocks_settings.stream) {
         return data.content.trim();
     } else {
-        if (extStates.current_set.chat_completion_source === chat_completion_sources.OPENAI || extStates.current_set.chat_completion_source === chat_completion_sources.MISTRALAI || extStates.current_set.chat_completion_source === chat_completion_sources.MAKERSUITE) {
-            return data.choices[0].message.content.trim();
-        } else if (extStates.current_set.chat_completion_source === chat_completion_sources.CLAUDE) {
+        if (extStates.current_set.chat_completion_source === chat_completion_sources.CLAUDE) {
             return data.content[0].text.trim();
+        } else {
+            return data.choices[0].message.content.trim();
         }
     }
 }
