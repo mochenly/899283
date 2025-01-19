@@ -329,6 +329,11 @@ async function setupListeners() {
         }
     });
 
+    $('#chat').on('click', '.custom-menu-button', function() {
+        const value = $(this).find('.custom-cyoa-option-value').text();
+        $('#send_textarea').val(value);
+    });
+
 
     let sortableBlocks = [
         {
