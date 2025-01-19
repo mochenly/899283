@@ -88,7 +88,14 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
         toastr.info(`${defaultExtPrefix} Generating, please wait...`);
         for (let idx = 0; idx < prompts.length; idx++) {
             const blocksData = await generateBlocks(prompts[idx]);
-            const blocks = extractMessageFromData(blocksData);
+            let blocks = extractMessageFromData(blocksData);
+            function removeBackticks(codeString) {
+                if (codeString.startsWith("```") && codeString.endsWith("```")) {
+                  return codeString.slice(codeString.indexOf('\n') > -1 ? codeString.indexOf('\n') + 1 : 3, -3);
+                }
+                return codeString;
+            }
+            blocks = removeBackticks(blocks)
             if (!is_separate) {
                 await addBlocksToExtra(messageId, blocks);
             } else {
