@@ -492,22 +492,23 @@ export function priorityCombineBlocks(globalBlocks, scopedBlocks) {
 export function getLastMessagesContext(item) {
     let lastMessages;
     let messages_count = item.messages_count;
+    const unhided_chat = chat.filter(chat => chat.is_system !== true);
     if (messages_count === undefined) {
         const keyword_stopper = item.keyword_stopper;
         if (keyword_stopper && keyword_stopper !== '') {
-            let lastMessageId = chat.slice(0, -1).findLastIndex(message => message.mes.includes(keyword_stopper));
+            let lastMessageId = unhided_chat.slice(0, -1).findLastIndex(message => message.mes.includes(keyword_stopper));
             if (lastMessageId == -1) {
                 lastMessageId = 0;
             }
-            messages_count = chat.length - lastMessageId;
+            messages_count = unhided_chat.length - lastMessageId;
         } else {
             return '';
         }
     }
     if (messages_count > 0) {
-        lastMessages = chat.slice(-messages_count);
+        lastMessages = unhided_chat.slice(-messages_count);
     } else if (messages_count < 0) {
-        lastMessages = chat.slice(0, -messages_count);
+        lastMessages = unhided_chat.slice(0, -messages_count);
     } else {
         return '';
     }
