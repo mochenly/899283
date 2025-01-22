@@ -61,7 +61,7 @@ export async function generateBlocks(prompt) {
     if (extStates.current_set.chat_completion_source === chat_completion_sources.CLAUDE) {
         generate_data['claude_use_sysprompt'] = true;
         generate_data['assistant_prefill'] = substituteParamsExtended(extStates.current_set.assistant_prefill);
-    } else if (extStates.current_set.assistant_prefill !== '') {
+    } else if (extStates.current_set.assistant_prefill !== '' && extStates.current_set.model !== 'deepseek-reasoner') {
         messages.push({ role: MessageRole.ASSISTANT, content: extStates.current_set.assistant_prefill })
     }
 
