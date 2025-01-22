@@ -189,6 +189,10 @@ export async function handleCharTrigger(messageId) {
         return;
     }
 
+    if (chat[messageId]?.mes.includes('Proxy error')) {
+        return;
+    }
+
     await purgeBlocksExtra(messageId, true);
 
     extStates.is_chat_modified = false;
