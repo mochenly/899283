@@ -493,7 +493,7 @@ export function getLastMessagesContext(item, messageId) {
     let lastMessages;
     let messages_count = item.messages_count;
     const sliced_chat = chat.slice(0, messageId + 1);
-    const unhided_chat = sliced_chat.filter(chat => chat.is_system !== true);
+    const unhided_chat = sliced_chat.filter(message => message.is_system !== true);
     if (messages_count === undefined) {
         const keyword_stopper = item.keyword_stopper;
         if (keyword_stopper && keyword_stopper !== '') {
