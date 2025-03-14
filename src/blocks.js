@@ -333,7 +333,7 @@ export function getBlockCombinedContext(block, messageId, allBlocks, additionalM
             contextStringArray.push(substituteParamsExtended(context_item.text, additionalMacro));
 
         } else if (context_item.type === ContextType.LAST_MESSAGES || context_item.type === ContextType.LAST_MESSAGES_KEYWORD) {
-            const lastMessages = getLastMessagesContext(context_item);
+            const lastMessages = getLastMessagesContext(context_item, messageId);
             if (lastMessages != '') {
                 contextStringArray.push(lastMessages);
             }
@@ -489,10 +489,11 @@ export function priorityCombineBlocks(globalBlocks, scopedBlocks) {
     return Object.values(combined);
 }
 
-export function getLastMessagesContext(item) {
+export function getLastMessagesContext(item, messageId) {
     let lastMessages;
     let messages_count = item.messages_count;
-    const unhided_chat = chat.filter(chat => chat.is_system !== true);
+    const sliced_chat = chat.slice(0, messageId + 1);
+    const unhided_chat = sliced_chat.filter(chat => chat.is_system !== true);
     if (messages_count === undefined) {
         const keyword_stopper = item.keyword_stopper;
         if (keyword_stopper && keyword_stopper !== '') {
