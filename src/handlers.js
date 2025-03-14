@@ -96,6 +96,7 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
                 return codeString;
             }
             blocks = removeBackticks(blocks)
+            eventSource.emit('extblocks_generated', blocks);
             if (!is_separate) {
                 await addBlocksToExtra(messageId, blocks);
             } else {
