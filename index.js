@@ -376,7 +376,7 @@ jQuery(async () => {
     eventSource.makeFirst(event_types.MESSAGE_EDITED, () => {
         extStates.is_chat_modified = true;
     });
-    eventSource.makeFirst(event_types.MESSAGE_UPDATED, (messageId) => {
+    eventSource.makeLast(event_types.MESSAGE_UPDATED, (messageId) => {
         if (extension_settings.ExtBlocks.extblocks_is_enabled) {
             updateBlocksDisplay(messageId);
         }
