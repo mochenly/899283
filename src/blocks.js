@@ -26,23 +26,7 @@ export async function createRegexForBlocks(forceReload = false) {
         }
     });
 
-    let shouldReload = false;
-
-    if (spoiler_names.length != 0) {
-        let oldRegexSource;
-        const newRegexSource = `${spoiler_names.map(block_name => getRegexForBlock(block_name)).join('|')}`;
-        if (extStates.spoilerRegex !== undefined) {
-            oldRegexSource = extStates.spoilerRegex.source;
-            if (oldRegexSource !== newRegexSource) {
-                shouldReload = true;
-            }
-        } else {
-            shouldReload = true;
-        }
-        extStates.spoilerRegex = new RegExp(newRegexSource, "g");
-    }
-
-    if ((forceReload || shouldReload) && this_chid !== undefined) {
+    if (forceReload && this_chid !== undefined) {
         await updateAllBlocksDisplayText();
         await selfReloadCurrentChat();
     }
@@ -59,7 +43,18 @@ export function updateBlocksDisplayText(messageId) {
             delete chat[messageId].extra.display_text;
         }
     } else {
-        chat[messageId].extra.display_text = chat[messageId].mes + `\n${chat[messageId].extra.extblocks.replaceAll(extStates.spoilerRegex, '')}`;
+        const messageBlocks = chat[messageId].extra.extblocks;
+        const allBlocks = getAllBlocks();
+        const blocksToDisplay = [];
+        for (const block of allBlocks) {
+            if (!block.hide_display) {
+                const blockFromMessage = getBlockFromMessage(messageBlocks, block.name);
+                if (blockFromMessage) {
+                    blocksToDisplay.push(blockFromMessage);
+                }
+            }
+        }
+        chat[messageId].extra.display_text = chat[messageId].mes + `\n${blocksToDisplay.join("\n")}`;
     }
 }
 
