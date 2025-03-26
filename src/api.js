@@ -11,7 +11,6 @@ export async function loadAPI() {
 
     $(`#ExtBlocks-proxy-ccsource option[value="${extStates.current_set.chat_completion_source}"]`).attr('selected', true);
     $(`#ExtBlocks-proxy-preset option[value="${extStates.ExtBlocks_settings.proxy_preset}"]`).attr('selected', true);
-    console.log(`Extblocks loaded model: ${extStates.current_set.model}`);
     
     const selectElement = $('#ExtBlocks-proxy-ccmodel');
     const modelValue = extStates.current_set.model;
