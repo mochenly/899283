@@ -11,7 +11,25 @@ export async function loadAPI() {
 
     $(`#ExtBlocks-proxy-ccsource option[value="${extStates.current_set.chat_completion_source}"]`).attr('selected', true);
     $(`#ExtBlocks-proxy-preset option[value="${extStates.ExtBlocks_settings.proxy_preset}"]`).attr('selected', true);
-    $(`#ExtBlocks-proxy-ccmodel option[value="${extStates.current_set.model}"]`).attr('selected', true);
+    console.log(`Extblocks loaded model: ${extStates.current_set.model}`);
+    
+    const selectElement = $('#ExtBlocks-proxy-ccmodel');
+    const modelValue = extStates.current_set.model;
+    const otherOptgroupLabel = 'Other';
+
+    if (selectElement.find(`option[value="${modelValue}"]`).length === 0) {
+        let otherOptgroup = selectElement.find(`optgroup[label="${otherOptgroupLabel}"]`);
+
+        if (otherOptgroup.length === 0) {
+            otherOptgroup = $(`<optgroup label="${otherOptgroupLabel}"></optgroup>`);
+            selectElement.append(otherOptgroup);
+        }
+
+        const newOption = new Option(modelValue, modelValue, true, true);
+        otherOptgroup.append(newOption);
+    }
+    $(`#ExtBlocks-proxy-ccmodel option[value="${modelValue}"]`).attr('selected', true);
+    
     $('#ExtBlocks-proxy-temperature').val(extStates.current_set.temperature);
     $('#ExtBlocks-proxy-system').val(extStates.current_set.system_prompt);
     $('#ExtBlocks-proxy-prefill').val(extStates.current_set.assistant_prefill);

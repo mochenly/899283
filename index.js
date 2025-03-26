@@ -223,9 +223,15 @@ async function setupListeners() {
         extension_settings.ExtBlocks.proxy_preset = value;
         saveSettingsDebounced();
     });
+
+    $("#ExtBlocks-proxy-ccmodel").select2({
+        tags: true
+    });
+
     $('#ExtBlocks-proxy-ccmodel').off('click').on('change', function () {
         const value = $('#ExtBlocks-proxy-ccmodel').val();
         extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].model = value;
+        console.log(`Extblocks model value: ${extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].model}`);
         saveSettingsDebounced();
     });
     $('#ExtBlocks-proxy-temperature').off('click').on('input', function () {
