@@ -15,7 +15,7 @@ import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocks
     firstSwipeBlockExtra, swipeBlockExtra
  } from './src/blocks.js';
 import { populateBlockMacrosBuffer, purgeAllBlocksMacros } from './src/macros.js';
-import { changeSet, importSet, refreshSetList } from './src/sets.js';
+import { changeSet, importSet, importSetFromObject, refreshSetList } from './src/sets.js';
 import { loadAPI } from './src/api.js';
 import { handleUserTrigger, handleCharTrigger,
     runBlockGenerationCallback, appendStringToExtraCallback, purgeExtraCallback, runBlockRegenerationCallback,
@@ -428,6 +428,41 @@ jQuery(async () => {
             await swipeBlockExtra(messageId, current_swipe_id);
         }
     });
+
+    eventSource.on("/fatpresets/import/extblocks", ({ setObject, returnCode }) => {
+        const isOk = importSetFromObject(setObject);
+        returnCode.code = isOk;
+    });
+    
+    eventSource.on("/fatpresets/change/extblocks", async ({ presetName, reloadFlag }) => {
+        if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
+            extension_settings.ExtBlocks.extblocks_is_enabled = true;
+            $('#extblocks_is_enabled').prop('checked', extension_settings.ExtBlocks.extblocks_is_enabled);
+            await createRegexForBlocks(true);
+            if (this_chid !== undefined) {
+                populateBlockMacrosBuffer();
+            }
+            saveSettingsDebounced();
+        }
+        if (extension_settings.ExtBlocks.active_set === presetName) return;
+        
+        const index = extension_settings.ExtBlocks.sets.findIndex(set => set.name === presetName);
+        if (index !== -1) {
+            await changeSet(index);
+        }
+    });
+    
+    eventSource.on("/fatpresets/disable/extblocks", async () => {
+        extension_settings.ExtBlocks.extblocks_is_enabled = false;
+        $('#extblocks_is_enabled').prop('checked', extension_settings.ExtBlocks.extblocks_is_enabled);
+        if (this_chid !== undefined) {
+            purgeAllBlocksMacros();
+            await purgeAllBlocksDisplayText();
+        }
+        saveSettingsDebounced();
+    });
+
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: ExtSlashCommand.GENERATE,
         callback: runBlockGenerationCallback,

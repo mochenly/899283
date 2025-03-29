@@ -35,6 +35,15 @@ export async function changeSet(idx) {
     }
 }
 
+export function importSetFromObject(setObject) {
+    if (!setObject.name) {
+        return false;
+    }
+
+    updateOrInsert(extension_settings.ExtBlocks.sets, setObject);
+    saveSettingsDebounced();
+    return true
+}
 
 export async function importSet(file) {
     if (!file) {
