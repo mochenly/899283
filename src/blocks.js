@@ -509,7 +509,7 @@ export function getLastMessagesContext(item, messageId) {
         return '';
     }
     let separator;
-    if (item.separator == 'newline') {
+    if (item.messages_separator == 'newline') {
         separator = '\n'
     } else if (item.separator == 'space') {
         separator = ' '
