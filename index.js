@@ -59,6 +59,7 @@ async function loadSettings() {
     $('#extblocks_is_enabled').prop('checked', extStates.ExtBlocks_settings.extblocks_is_enabled);
     $('#ExtBlocks-autoregex-display').val(extension_settings.ExtBlocks.autohide_display);
     $('#ExtBlocks-autoregex-prompt').val(extension_settings.ExtBlocks.autohide_prompt);
+    $('#ExtBlocks-enable-jb').val(extStates.current_set.confirmation_jb ?? false);
 
     refreshSetList();
 
@@ -246,6 +247,13 @@ async function setupListeners() {
     $('#ExtBlocks-proxy-prefill').off('click').on('input', function () {
         const value = $('#ExtBlocks-proxy-prefill').val();
         extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].assistant_prefill = String(value);
+        saveSettingsDebounced();
+    });
+
+    $('#ExtBlocks-enable-jb').off('click').on('click', () => {
+        const value = $('#ExtBlocks-enable-jb').prop('checked');
+        extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].confirmation_jb = value;
+
         saveSettingsDebounced();
     });
 
