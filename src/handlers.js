@@ -30,6 +30,8 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
     async function generateRewriteBlocks(generation_order) {
         if (rewriteBlocks.length > 0 && rewriteBlocks.some(block => block.generation_order === generation_order)) {
             toastr.info(`${defaultExtPrefix} Rewriting, please wait...`);
+            let isSuccess = true;
+            let isPartialSuccess = false;
             for (let idx = 0; idx < rewriteBlocks.length; idx++) {
                 const rewriteBlock = rewriteBlocks[idx];
                 if (rewriteBlock.generation_order === generation_order) {
@@ -41,14 +43,30 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
                     const blocksData = await generateBlocks(fullPrompt);
                     const blocks = extractMessageFromData(blocksData);
                     const rewrittenText = getMultiBlockContentFromMessage(blocks, 'rewritten text');
-                    chat[messageId].mes = rewrittenText;
+                    if (rewrittenText && !rewrittenText.includes('Proxy error')) {
+                        chat[messageId].mes = rewrittenText;
+                        isPartialSuccess = true;
+                    } else {
+                        isSuccess = false;
+                    }
                 }
             }
-            if(chat[messageId].swipe_id) {
+            
+            if(chat[messageId].swipe_id && isPartialSuccess) {
                 chat[messageId].swipes[chat[messageId].swipe_id] = chat[messageId].mes;
             }
-            await updateBlocksDisplay(messageId);
-            toastr.success(`${defaultExtPrefix} Rewriting is done!`);
+
+            if (isPartialSuccess) {
+                await updateBlocksDisplay(messageId);
+            }
+
+            if (isSuccess) {
+                toastr.success(`${defaultExtPrefix} Rewriting is done!`);
+            } else if (isPartialSuccess) {
+                toastr.warning(`${defaultExtPrefix} Rewriting probably failed.`);
+            } else {
+                toastr.error(`${defaultExtPrefix} Rewriting failed.`);
+            }
         }
     }
 
