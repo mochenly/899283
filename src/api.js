@@ -63,7 +63,7 @@ export async function generateBlocks(prompt) {
         'stream': stream,
         'top_p': 1,
         'chat_completion_source': extStates.current_set.chat_completion_source,
-        'max_tokens': 2048
+        'max_tokens': 4096
     };
     const preset = proxies.find(p => p.name === extStates.ExtBlocks_settings.proxy_preset);
     if (extStates.current_set.chat_completion_source !== chat_completion_sources.OPENROUTER) {
