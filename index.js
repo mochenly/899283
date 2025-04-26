@@ -59,7 +59,6 @@ async function loadSettings() {
     $('#extblocks_is_enabled').prop('checked', extStates.ExtBlocks_settings.extblocks_is_enabled);
     $('#ExtBlocks-autoregex-display').val(extension_settings.ExtBlocks.autohide_display);
     $('#ExtBlocks-autoregex-prompt').val(extension_settings.ExtBlocks.autohide_prompt);
-    $('#ExtBlocks-enable-jb').val(extStates.current_set.confirmation_jb ?? false);
 
     refreshSetList();
 

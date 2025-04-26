@@ -36,6 +36,7 @@ export async function loadAPI() {
         extStates.ExtBlocks_settings.stream = defaultSettings.stream;
     }
     $('#ExtBlocks-proxy-stream').prop('checked', extStates.ExtBlocks_settings.stream);
+    $('#ExtBlocks-enable-jb').prop('checked', extStates.current_set.confirmation_jb ?? false);
 }
 
 
