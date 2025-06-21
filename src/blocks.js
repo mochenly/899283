@@ -12,7 +12,7 @@ import { insertBlockMacros, deleteBlockMacros, checkAllMacros } from './macros.j
 import { openEditor, openAccumulationEditor, openScriptEditor } from './editors.js';
 
 
-export async function createRegexForBlocks(forceReload = false) {
+export async function createRegexForBlocks(forceReload = false, updateDisplayTextOnly = false) {
     let spoiler_names = [];
 
     extStates.current_set.global_blocks.forEach((block) => {
@@ -29,6 +29,9 @@ export async function createRegexForBlocks(forceReload = false) {
     if (forceReload && this_chid !== undefined) {
         await updateAllBlocksDisplayText();
         await selfReloadCurrentChat();
+    } else if (updateDisplayTextOnly && this_chid !== undefined) {
+        console.log("Updating display text")
+        await updateAllBlocksDisplayText();
     }
 
 }
@@ -488,7 +491,7 @@ export async function loadBlocks() {
     extStates.current_set.global_blocks.forEach((block, index) => renderBlock('#ExtBlocks-blocks-global-list', block, false, index));
     characters[this_chid]?.data?.extensions?.ExtBlocks?.forEach((block, index) => renderBlock('#ExtBlocks-blocks-scoped-list', block, true, index));
     if (extStates.ExtBlocks_settings.extblocks_is_enabled) {
-        await createRegexForBlocks();
+        await createRegexForBlocks(false, true);
     }
     saveSettingsDebounced();
 }

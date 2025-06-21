@@ -463,7 +463,8 @@ jQuery(async () => {
         if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
             extension_settings.ExtBlocks.extblocks_is_enabled = true;
             $('#extblocks_is_enabled').prop('checked', extension_settings.ExtBlocks.extblocks_is_enabled);
-            await createRegexForBlocks(true);
+            await createRegexForBlocks(false, true);
+            reloadFlag.value = true;
             if (this_chid !== undefined) {
                 populateBlockMacrosBuffer();
             }
