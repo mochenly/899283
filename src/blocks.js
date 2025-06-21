@@ -414,6 +414,44 @@ export async function loadBlocks() {
 
         blockHtml.attr('id', block.id);
         blockHtml.find('.ExtBlocks_block_name').text(block.name);
+
+        const presetButtonContainer = blockHtml.find('.ExtBlocks-block-preset');
+        const presetButtonIcon = presetButtonContainer.find('i');
+        const presets = ['big', 'medium', 'small'];
+        const presetIcons = {
+            'big': 'fa-temperature-full',
+            'medium': 'fa-temperature-half',
+            'small': 'fa-temperature-empty',
+        };
+        const presetTitles = {
+            'big': 'API Preset: Big',
+            'medium': 'API Preset: Medium',
+            'small': 'API Preset: Small',
+        };
+
+        if (block.api_preset === undefined) {
+            block.api_preset = 'big';
+        }
+
+        let currentPreset = block.api_preset;
+
+        const updateIcon = () => {
+            presetButtonIcon.removeClass('fa-temperature-full fa-temperature-half fa-temperature-empty');
+            const iconClass = presetIcons[currentPreset];
+            presetButtonIcon.addClass(iconClass);
+            presetButtonContainer.attr('title', presetTitles[currentPreset]);
+        };
+
+        updateIcon();
+
+        presetButtonContainer.on('click', async function () {
+            const currentIndex = presets.indexOf(currentPreset);
+            currentPreset = presets[(currentIndex + 1) % presets.length];
+            block.api_preset = currentPreset;
+            updateIcon();
+            await saveBlock(block, index, isScoped);
+        });
+
         blockHtml.find('.disable_ExtBlocks').prop('checked', block.disabled ?? false)
             .on('input', async function () {
                 block.disabled = !!$(this).prop('checked');
@@ -452,6 +490,7 @@ export async function loadBlocks() {
     if (extStates.ExtBlocks_settings.extblocks_is_enabled) {
         await createRegexForBlocks();
     }
+    saveSettingsDebounced();
 }
 
 export function groupBlocksByContext(blocks) {

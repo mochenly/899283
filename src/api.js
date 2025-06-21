@@ -6,14 +6,14 @@ import { extStates, defaultSettings, MessageRole } from './common.js';
 import { refreshSettings } from './utils.js';
 
 
-export async function loadAPI() {
+export async function loadApiPreset() {
     await refreshSettings();
-
-    $(`#ExtBlocks-proxy-ccsource option[value="${extStates.current_set.chat_completion_source}"]`).attr('selected', true);
-    $(`#ExtBlocks-proxy-preset option[value="${extStates.ExtBlocks_settings.proxy_preset}"]`).attr('selected', true);
+    const preset = extStates.api_preset;
+    $(`#ExtBlocks-proxy-ccsource`).val(preset.chat_completion_source);
+    $(`#ExtBlocks-proxy-preset`).val(preset.proxy_preset);
     
     const selectElement = $('#ExtBlocks-proxy-ccmodel');
-    const modelValue = extStates.current_set.model;
+    const modelValue = preset.model;
     const otherOptgroupLabel = 'Other';
 
     if (selectElement.find(`option[value="${modelValue}"]`).length === 0) {
@@ -27,16 +27,30 @@ export async function loadAPI() {
         const newOption = new Option(modelValue, modelValue, true, true);
         otherOptgroup.append(newOption);
     }
-    $(`#ExtBlocks-proxy-ccmodel option[value="${modelValue}"]`).attr('selected', true);
+    $('#ExtBlocks-proxy-ccmodel').val(modelValue).trigger('change');
     
-    $('#ExtBlocks-proxy-temperature').val(extStates.current_set.temperature);
-    $('#ExtBlocks-proxy-system').val(extStates.current_set.system_prompt);
-    $('#ExtBlocks-proxy-prefill').val(extStates.current_set.assistant_prefill);
-    if (extStates.ExtBlocks_settings.stream === undefined) {
-        extStates.ExtBlocks_settings.stream = defaultSettings.stream;
+    $('#ExtBlocks-proxy-temperature').val(preset.temperature);
+    $('#ExtBlocks-proxy-system').val(preset.system_prompt);
+    $('#ExtBlocks-proxy-prefill').val(preset.assistant_prefill);
+    $('#ExtBlocks-proxy-stream').prop('checked', preset.stream);
+    $('#ExtBlocks-enable-jb').prop('checked', preset.confirmation_jb ?? false);
+}
+
+export async function loadAPI() {
+    let proxies_name = proxies.map(obj => obj.name);
+    proxies_name.forEach(function(option) {
+        $('#ExtBlocks-proxy-preset').append($('<option>', {
+            value: option,
+            text: option
+        }));
+    });
+
+    if(!proxies_name.find(p => p === extStates.api_preset.proxy_preset)) {
+        extStates.api_preset.proxy_preset = proxies_name[0];
     }
-    $('#ExtBlocks-proxy-stream').prop('checked', extStates.ExtBlocks_settings.stream);
-    $('#ExtBlocks-enable-jb').prop('checked', extStates.current_set.confirmation_jb ?? false);
+    
+    $('#ExtBlocks-api-preset').val(extStates.ExtBlocks_settings.active_api_preset);
+    await loadApiPreset();
 }
 
 
@@ -51,41 +65,42 @@ function getStreamingReply(data) {
 }
 
 
-export async function generateBlocks(prompt) {
+export async function generateBlocks(prompt, apiPresetName) {
     let messages = [{ role: MessageRole.USER, content: prompt.trim() }];
-    const stream = extStates.ExtBlocks_settings.stream ?? false;
-    if (extStates.current_set.system_prompt !== '') {
-        messages.unshift({ role: MessageRole.SYSTEM, content: substituteParamsExtended(extStates.current_set.system_prompt.trim()) });
+    const preset = apiPresetName ? extStates.ExtBlocks_settings.api_presets[apiPresetName] : extStates.api_preset;
+    const stream = preset.stream ?? false;
+    if (preset.system_prompt !== '') {
+        messages.unshift({ role: MessageRole.SYSTEM, content: substituteParamsExtended(preset.system_prompt.trim()) });
     }
     let generate_data = {
         'messages': messages,
-        'model': extStates.current_set.model,
-        'temperature': extStates.current_set.temperature,
+        'model': preset.model,
+        'temperature': preset.temperature,
         'stream': stream,
         'top_p': 1,
-        'chat_completion_source': extStates.current_set.chat_completion_source,
+        'chat_completion_source': preset.chat_completion_source,
         'max_tokens': 4096
     };
-    const preset = proxies.find(p => p.name === extStates.ExtBlocks_settings.proxy_preset);
-    if (extStates.current_set.chat_completion_source !== chat_completion_sources.OPENROUTER) {
-        generate_data['reverse_proxy'] = preset.url;
-        generate_data['proxy_password'] = preset.password;
+    const proxy_preset = proxies.find(p => p.name === preset.proxy_preset);
+    if (preset.chat_completion_source !== chat_completion_sources.OPENROUTER) {
+        generate_data['reverse_proxy'] = proxy_preset.url;
+        generate_data['proxy_password'] = proxy_preset.password;
     }
 
-    if (extStates.current_set.chat_completion_source === chat_completion_sources.MAKERSUITE) {
+    if (preset.chat_completion_source === chat_completion_sources.MAKERSUITE) {
         generate_data['use_makersuite_sysprompt'] = true;
     }
 
-    if (extStates.current_set.confirmation_jb) {
+    if (preset.confirmation_jb) {
         messages.push({ role: MessageRole.ASSISTANT, content: "[Please confirm your request]" })
         messages.push({ role: MessageRole.USER, content: "[I confirm]" })
     }
 
-    if (extStates.current_set.chat_completion_source === chat_completion_sources.CLAUDE) {
+    if (preset.chat_completion_source === chat_completion_sources.CLAUDE) {
         generate_data['claude_use_sysprompt'] = true;
-        generate_data['assistant_prefill'] = substituteParamsExtended(extStates.current_set.assistant_prefill);
-    } else if (extStates.current_set.assistant_prefill !== '' && !extStates.current_set.model.includes('deepseek-r') && !extStates.current_set.model.includes('gemini-2.0-flash-thinking-exp')) {
-        messages.push({ role: MessageRole.ASSISTANT, content: extStates.current_set.assistant_prefill })
+        generate_data['assistant_prefill'] = substituteParamsExtended(preset.assistant_prefill);
+    } else if (preset.assistant_prefill !== '' && !preset.model.includes('deepseek-r') && !preset.model.includes('gemini-2.0-flash-thinking-exp')) {
+        messages.push({ role: MessageRole.ASSISTANT, content: preset.assistant_prefill })
     }
 
     const generate_url = '/api/backends/chat-completions/generate';
@@ -135,11 +150,11 @@ export async function generateBlocks(prompt) {
     }
 }
 
-export function extractMessageFromData(data) {
-    if (extStates.ExtBlocks_settings.stream) {
+export function extractMessageFromData(data, preset) {
+    if (preset.stream) {
         return data.content.trim();
     } else {
-        if (extStates.current_set.chat_completion_source === chat_completion_sources.CLAUDE) {
+        if (preset.chat_completion_source === chat_completion_sources.CLAUDE) {
             return data.content[0].text.trim();
         } else {
             return data.choices[0].message.content.trim();

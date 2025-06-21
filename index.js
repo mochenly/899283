@@ -2,13 +2,13 @@ import { saveSettingsDebounced, callPopup, this_chid, characters, eventSource,
      event_types, chat } from '../../../../script.js';
 import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
-import { proxies } from '../../../openai.js';
 import { download, uuidv4 } from '../../../utils.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument} from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
-import { defaultExtPrefix, extStates, path, templates_path, ElementTemplate, ExtSlashCommand, editButton, extName, defaultSettings } from './src/common.js';
+import { defaultExtPrefix, extStates, path, templates_path, ElementTemplate, ExtSlashCommand, editButton,
+    extName, defaultSettings, defaultApiPreset } from './src/common.js';
 import { interactiveSortData, selfReloadCurrentChat, getDefaultSet, updateOrInsert, refreshSettings, getRegexForBlock } from './src/utils.js';
 import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocksFromExtra,
     purgeBlocksExtra, addBlocksToExtra, loadBlocks, updateBlocksDisplay, checkBlocksInFirstMessage,
@@ -16,7 +16,7 @@ import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocks
  } from './src/blocks.js';
 import { populateBlockMacrosBuffer, purgeAllBlocksMacros } from './src/macros.js';
 import { changeSet, importSet, importSetFromObject, refreshSetList } from './src/sets.js';
-import { loadAPI } from './src/api.js';
+import { loadAPI, loadApiPreset } from './src/api.js';
 import { handleUserTrigger, handleCharTrigger,
     runBlockGenerationCallback, appendStringToExtraCallback, purgeExtraCallback, runBlockRegenerationCallback,
     runRewriteBlocksCallback, runScriptsExecutionCallback, exportBlocksCallback
@@ -42,6 +42,29 @@ function addEditButtonToLastMessage() {
 
 function checkSettings() {
     const extBlocksSettings = extension_settings.ExtBlocks;
+    if (!extBlocksSettings.api_presets) {
+        const oldPreset = { ...defaultApiPreset };
+        if (extBlocksSettings.proxy_preset) {
+            oldPreset.proxy_preset = extBlocksSettings.proxy_preset;
+            oldPreset.stream = extBlocksSettings.stream;
+            const set = extBlocksSettings.sets[extBlocksSettings.active_set_idx];
+            if(set) {
+                oldPreset.chat_completion_source = set.chat_completion_source;
+                oldPreset.model = set.model;
+                oldPreset.temperature = set.temperature;
+                oldPreset.system_prompt = set.system_prompt;
+                oldPreset.assistant_prefill = set.assistant_prefill;
+                oldPreset.confirmation_jb = set.confirmation_jb;
+            }
+        }
+
+        extBlocksSettings.api_presets = {
+            'big': { ...oldPreset },
+            'medium': { ...oldPreset },
+            'small': { ...oldPreset },
+        };
+        extBlocksSettings.active_api_preset = 'big';
+    }
     Object.assign(extBlocksSettings, {
         autohide_display: extBlocksSettings.autohide_display ?? defaultSettings.autohide_display,
         autohide_prompt: extBlocksSettings.autohide_prompt ?? defaultSettings.autohide_prompt,
@@ -61,18 +84,6 @@ async function loadSettings() {
     $('#ExtBlocks-autoregex-prompt').val(extension_settings.ExtBlocks.autohide_prompt);
 
     refreshSetList();
-
-    let proxies_name = proxies.map(obj => obj.name);
-    proxies_name.forEach(function(option) {
-        $('#ExtBlocks-proxy-preset').append($('<option>', {
-            value: option,
-            text: option
-        }));
-    });
-
-    if(!proxies_name.find(p => p === extStates.ExtBlocks_settings.proxy_preset)) {
-        extension_settings.ExtBlocks.proxy_preset = proxies_name[0];
-    }
     
     await loadAPI();
     await loadBlocks();
@@ -205,22 +216,29 @@ async function setupListeners() {
     });
 
 
+    $('#ExtBlocks-api-preset').on('change', async function () {
+        const presetName = $(this).val();
+        extension_settings.ExtBlocks.active_api_preset = presetName;
+        saveSettingsDebounced();
+        await loadApiPreset();
+    });
+    
     $('#ExtBlocks-proxy-toggle').off('click').on('click', function () {
         $('#ExtBlocks-proxy').slideToggle(200, 'swing');
     });
     $('#ExtBlocks-proxy-ccsource').off('click').on('change', function () {
         const value = $('#ExtBlocks-proxy-ccsource').val();
-        extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].chat_completion_source = value;
+        extStates.api_preset.chat_completion_source = value;
         saveSettingsDebounced();
     });
     $('#ExtBlocks-proxy-stream').off('click').on('change', function () {
         const value = $('#ExtBlocks-proxy-stream').prop('checked');
-        extension_settings.ExtBlocks.stream = value;
+        extStates.api_preset.stream = value;
         saveSettingsDebounced();
     });
     $('#ExtBlocks-proxy-preset').off('click').on('change', function () {
         const value = $('#ExtBlocks-proxy-preset').val();
-        extension_settings.ExtBlocks.proxy_preset = value;
+        extStates.api_preset.proxy_preset = value;
         saveSettingsDebounced();
     });
 
@@ -230,28 +248,28 @@ async function setupListeners() {
 
     $('#ExtBlocks-proxy-ccmodel').off('click').on('change', function () {
         const value = $('#ExtBlocks-proxy-ccmodel').val();
-        extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].model = value;
+        extStates.api_preset.model = value;
         saveSettingsDebounced();
     });
     $('#ExtBlocks-proxy-temperature').off('click').on('input', function () {
         const value = $('#ExtBlocks-proxy-temperature').val();
-        extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].temperature = parseFloat(String(value));
+        extStates.api_preset.temperature = parseFloat(String(value));
         saveSettingsDebounced();
     });
     $('#ExtBlocks-proxy-system').off('click').on('input', function () {
         const value = $('#ExtBlocks-proxy-system').val();
-        extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].system_prompt = String(value);
+        extStates.api_preset.system_prompt = String(value);
         saveSettingsDebounced();
     });
     $('#ExtBlocks-proxy-prefill').off('click').on('input', function () {
         const value = $('#ExtBlocks-proxy-prefill').val();
-        extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].assistant_prefill = String(value);
+        extStates.api_preset.assistant_prefill = String(value);
         saveSettingsDebounced();
     });
 
     $('#ExtBlocks-enable-jb').off('click').on('click', () => {
         const value = $('#ExtBlocks-enable-jb').prop('checked');
-        extension_settings.ExtBlocks.sets[extension_settings.ExtBlocks.active_set_idx].confirmation_jb = value;
+        extStates.api_preset.confirmation_jb = value;
 
         saveSettingsDebounced();
     });

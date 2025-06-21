@@ -40,8 +40,9 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
                     const prompt = `Block(s) prompt:\n${substituteParamsExtended(rewriteBlock.prompt, additionalMacro)}`;
                     let fullPrompt = `${context}\n\n\n${template}\n\n${prompt}`;
                     fullPrompt = await checkAllMacros(fullPrompt);
-                    const blocksData = await generateBlocks(fullPrompt);
-                    const blocks = extractMessageFromData(blocksData);
+                    const blocksData = await generateBlocks(fullPrompt, rewriteBlock.api_preset);
+                    const preset = rewriteBlock.api_preset ? extStates.ExtBlocks_settings.api_presets[rewriteBlock.api_preset] : extStates.api_preset;
+                    const blocks = extractMessageFromData(blocksData, preset);
                     const rewrittenText = getMultiBlockContentFromMessage(blocks, 'rewritten text');
                     if (rewrittenText && !rewrittenText.includes('Proxy error')) {
                         chat[messageId].mes = rewrittenText;
@@ -84,29 +85,25 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
 
     const groupedBlocks = groupBlocksByContext(generatedBlocks);
 
-    const prompts = [];
-
-    for (let context in groupedBlocks) {
-        const blocks = groupedBlocks[context];
-        let combinedContext = '';
-        let combinedTemplate = `Block(s) template:\n${blocks.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
-        let combinedPrompt = `Block(s) prompt:\n${blocks.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
-
-        if (blocks.length != 0) {
-            const block = blocks[0];
-            combinedContext = getBlockCombinedContext(block, messageId, allBlocks, additionalMacro);
-        };
-        
-        let fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
-        fullPrompt = await checkAllMacros(fullPrompt);
-        prompts.push(fullPrompt);
-    }
-    
-    if (prompts.length > 0) {
+    if (Object.keys(groupedBlocks).length > 0) {
         toastr.info(`${defaultExtPrefix} Generating, please wait...`);
-        for (let idx = 0; idx < prompts.length; idx++) {
-            const blocksData = await generateBlocks(prompts[idx]);
-            let blocks = extractMessageFromData(blocksData);
+        for (let context in groupedBlocks) {
+            const blocksInGroup = groupedBlocks[context];
+            const apiPresetName = blocksInGroup[0].api_preset;
+            let combinedContext = '';
+            let combinedTemplate = `Block(s) template:\n${blocksInGroup.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
+            let combinedPrompt = `Block(s) prompt:\n${blocksInGroup.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
+
+            if (blocksInGroup.length != 0) {
+                const block = blocksInGroup[0];
+                combinedContext = getBlockCombinedContext(block, messageId, allBlocks, additionalMacro);
+            };
+            
+            let fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
+            fullPrompt = await checkAllMacros(fullPrompt);
+            const blocksData = await generateBlocks(fullPrompt, apiPresetName);
+            const preset = apiPresetName ? extStates.ExtBlocks_settings.api_presets[apiPresetName] : extStates.api_preset;
+            let blocks = extractMessageFromData(blocksData, preset);
             function removeBackticks(codeString) {
                 if (codeString.startsWith("```") && codeString.endsWith("```")) {
                   return codeString.slice(codeString.indexOf('\n') > -1 ? codeString.indexOf('\n') + 1 : 3, -3);

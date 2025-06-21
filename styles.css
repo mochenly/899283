@@ -121,6 +121,10 @@
     margin-top: 1px;
     margin-bottom: 1px;
 }
+.ExtBlocks-block-icon {
+    width: 15px;
+    text-align: center;
+}
 
 .ExtBlocks-block-label:has(.disable_ExtBlocks:checked) .ExtBlocks_block_name {
     text-decoration: line-through;
