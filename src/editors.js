@@ -276,6 +276,7 @@ export async function openEditor(existingId, isScoped) {
             editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val(trigger_periodicity);
             editorHtml.find('input[name="period"]').val(existingBlock.period ?? 2);
             editorHtml.find('input[name="keyword"]').val(block_keyword ?? '');
+            editorHtml.find('input[name="keyword_is_regex"]').prop('checked', existingBlock.keyword_is_regex ?? false);
             changeTriggerPeriodicity(trigger_periodicity);
             
             editorHtml.find('input[name="hide_display"]').prop('checked', existingBlock.hide_display ?? false);
@@ -411,6 +412,7 @@ export async function openEditor(existingId, isScoped) {
             char_message: editorHtml.find('input[name="char_message"]').prop('checked'),
             period: parseInt(String(editorHtml.find('input[name="period"]').val() || 2)),
             keyword: block_keyword,
+            keyword_is_regex: editorHtml.find('input[name="keyword_is_regex"]').prop('checked'),
             hide_display: editorHtml.find('input[name="hide_display"]').prop('checked'),
             inject_block: editorHtml.find('input[name="inject_block"]').prop('checked'),
             injection_role: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-role"]`).val())),

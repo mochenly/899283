@@ -162,7 +162,27 @@ export async function handleMessageTrigger(messageId, isUser) {
         }
         const trigger_predicate = isUser ? block.user_message : block.char_message;
         if (block.keyword && block.keyword !== '') {
-            const keyword_predicate = chat[messageId].mes.includes(block.keyword);
+            let keyword_predicate;
+            if (block.keyword_is_regex) {
+                try {
+                    let regex;
+                    const keyword = block.keyword;
+                    if (keyword.startsWith('/') && keyword.lastIndexOf('/') > 0) {
+                        const lastSlash = keyword.lastIndexOf('/');
+                        const content = keyword.substring(1, lastSlash);
+                        const flags = keyword.substring(lastSlash + 1);
+                        regex = new RegExp(content, flags);
+                    } else {
+                        regex = new RegExp(keyword);
+                    }
+                    keyword_predicate = regex.test(chat[messageId].mes);
+                } catch (e) {
+                    console.error(`ExtBlocks: Invalid regex for block "${block.name}": ${block.keyword}`, e);
+                    keyword_predicate = false;
+                }
+            } else {
+                keyword_predicate = chat[messageId].mes.includes(block.keyword);
+            }
             return trigger_predicate && keyword_predicate;
         } else {
             const period_predicate = isUser ? ((messageId - 1) % block.period === 0) : (messageId % block.period === 0);
