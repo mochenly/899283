@@ -85,6 +85,8 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
 
     const groupedBlocks = groupBlocksByContext(generatedBlocks);
 
+    const blocksList = [];
+
     if (Object.keys(groupedBlocks).length > 0) {
         toastr.info(`${defaultExtPrefix} Generating, please wait...`);
         for (let context in groupedBlocks) {
@@ -110,8 +112,10 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
                 }
                 return codeString;
             }
-            blocks = removeBackticks(blocks)
+            blocks = removeBackticks(blocks);
+            blocksList.push(blocks);
             eventSource.emit('/extblocks/generated', blocks);
+            
             if (!is_separate) {
                 await addBlocksToExtra(messageId, blocks);
             } else {
@@ -141,6 +145,8 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
 
     await generateRewriteBlocks('after');
     await executeScriptBlocks('after');
+
+    return blocksList;
 }
 
 

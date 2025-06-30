@@ -17,7 +17,7 @@ import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocks
 import { populateBlockMacrosBuffer, purgeAllBlocksMacros } from './src/macros.js';
 import { changeSet, importSet, importSetFromObject, refreshSetList } from './src/sets.js';
 import { loadAPI, loadApiPreset } from './src/api.js';
-import { handleUserTrigger, handleCharTrigger,
+import { handleUserTrigger, handleCharTrigger, handleBlocksGeneration,
     runBlockGenerationCallback, appendStringToExtraCallback, purgeExtraCallback, runBlockRegenerationCallback,
     runRewriteBlocksCallback, runScriptsExecutionCallback, exportBlocksCallback
  } from './src/handlers.js';
@@ -487,6 +487,18 @@ jQuery(async () => {
         }
         saveSettingsDebounced();
     });
+
+    eventSource.on(`/extblocks/generate`, async (messageId, isUser, allBlocks, triggeredBlocks, callback) => {
+        const blocksList = await handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks);
+        
+        if (!callback) return;
+        try {
+            callback(blocksList);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+    })
 
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
