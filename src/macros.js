@@ -43,7 +43,7 @@ export async function checkWorldInfoMacros(prompt) {
     if (containsWorldInfoMacros && this_chid !== undefined) {
         const promptChat = [ prompt ];
         const maxContext = 2e5;
-        const activatedWorldInfo = await checkWorldInfo(promptChat, maxContext, true);
+        const activatedWorldInfo = await checkWorldInfo(promptChat, maxContext, true, {});
         let worldInfoAll = [];
         let worldInfoBefore = activatedWorldInfo.worldInfoBefore;
         if (worldInfoBefore !== '') {
