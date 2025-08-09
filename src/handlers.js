@@ -3,7 +3,7 @@ import { substituteParamsExtended, this_chid, eventSource, event_types, chat,
 
 import { defaultExtPrefix, extStates, BlockType } from './common.js';
 import { getBlockCombinedContext, updateBlocksDisplay, groupBlocksByContext, addBlocksToExtra,
-    getAllEnabledBlocks, purgeBlocksExtra, getPreviousBlockMessageId, injectBlock, getAllGeneratedBlocks,
+    getAllEnabledBlocks, purgeBlocksExtra, getPreviousBlockContextUnconditional, injectBlock, getAllGeneratedBlocks,
     getAllRewriteBlocks, getAllPreviousBlocks, getAllScriptBlocks
  } from './blocks.js';
 import { checkAllMacros } from './macros.js';
@@ -213,13 +213,10 @@ export async function handleUserTrigger(messageId, is_swipe = false) {
     const allBlocks = getAllEnabledBlocks();
     allBlocks.forEach(blockConfig => {
         if (blockConfig.inject_block && blockConfig.block_type !== BlockType.REWRITE && blockConfig.block_type !== BlockType.SCRIPT) {
-            const mes_id = getPreviousBlockMessageId(messageId, blockConfig, true);
-            if (mes_id >= 0) {
-                if (chat[mes_id].extra && chat[mes_id].extra.extblocks) {
-                    const previous_block_message = chat[mes_id].extra.extblocks;
-                    const previous_block = getBlockFromMessage(previous_block_message, blockConfig.name);
-                    injectBlock(previous_block, blockConfig);
-                }
+            const previous_block_full = getPreviousBlockContextUnconditional(blockConfig, messageId, true, 1);
+            if (previous_block_full) {
+                const previous_block_content = getBlockFromMessage(previous_block_full, blockConfig.name);
+                injectBlock(previous_block_content, blockConfig);
             }
         }
     });

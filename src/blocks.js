@@ -573,65 +573,34 @@ export function getLastMessagesContext(item, messageId) {
 }
 
 
-export function getPreviousBlockMessageId(messageId, blockConfig, may_current = false) {
-    const block_keyword = blockConfig.keyword;
-    let previous_block_message_id;
-    if (block_keyword && block_keyword !== '') {
-        const block_regex = getBlockEncloseRegex(blockConfig.name);
-        const lastMessageId = chat.slice(0, messageId + 1).findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
-        return lastMessageId;
-    } else if (blockConfig.block_type === BlockType.ACCUMULATION) {
-        const block_regex = getBlockEncloseRegex(blockConfig.name);
-        const lastMessageId = chat.slice(0, messageId + 1).findLastIndex((message) => getBlockFromMessageWithRegex(message.extra?.extblocks ?? '', block_regex) !== '');
-        return lastMessageId;
-    } else if (blockConfig.block_type === BlockType.REWRITE || blockConfig.block_type === BlockType.SCRIPT) {
-        return -1;
-    } else {
-        const block_period = blockConfig.period;
-        const offset = may_current ? 0 : 1;
-        if (blockConfig.user_message && blockConfig.char_message) {
-            previous_block_message_id = messageId - offset - ((messageId - offset) % block_period);
-        } else if (blockConfig.user_message) {
-            previous_block_message_id = messageId - offset - ((messageId - 1 - offset) % block_period);
-            if (previous_block_message_id % 2 != 1) {
-                previous_block_message_id -= block_period;
-            }
-        } else if (blockConfig.char_message) {
-            previous_block_message_id = messageId - offset - ((messageId - offset) % block_period);
-            if (previous_block_message_id % 2 != 0) {
-                previous_block_message_id -= block_period;
-            }
-        } else {
-            return -1;
-        }
-    }
-
-    return previous_block_message_id;
-}
-
 export function getPreviousBlockContext(item, messageId, allBlocks) {
     const previousBlockConfig = allBlocks.find(obj => obj.name === item.block_name);
     if (previousBlockConfig) {
-        return getPreviousBlockContextUnconditional(previousBlockConfig, messageId);
+        return getPreviousBlockContextUnconditional(previousBlockConfig, messageId, false, item.block_count);
     }
 
     return '';
 }
 
-export function getPreviousBlockContextUnconditional(block, messageId, may_current = false) {
-    const previous_block_message_id = getPreviousBlockMessageId(messageId, block, may_current);
-    if (previous_block_message_id >= 0) {
-        if (chat[previous_block_message_id].extra && chat[previous_block_message_id].extra.extblocks) {
-            const previous_block_message = chat[previous_block_message_id].extra.extblocks;
-            const previous_block = getBlockFromMessage(previous_block_message, block.name);
-            if (previous_block === '' && may_current) {
-                return getPreviousBlockContextUnconditional(block, messageId);
-            } else {
-                return previous_block;
+export function getPreviousBlockContextUnconditional(block, messageId, may_current = false, count = 1) {
+    const block_regex = getBlockEncloseRegex(block.name);
+    const blocks = [];
+    if (count === undefined || count < 1) {
+        count = 1;
+    }
+    const startId = messageId - (may_current ? 0 : 1);
+
+    for (let i = startId; i >= 0 && blocks.length < count; i--) {
+        const message = chat[i];
+        if (message.extra?.extblocks) {
+            const blockContent = getBlockFromMessageWithRegex(message.extra.extblocks, block_regex);
+            if (blockContent !== '') {
+                blocks.push(blockContent);
             }
         }
     }
-    return '';
+
+    return blocks.reverse().join('\n\n');
 }
 
 
