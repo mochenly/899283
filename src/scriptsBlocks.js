@@ -1,7 +1,14 @@
 import { SlashCommandParser } from '../../../../slash-commands/SlashCommandParser.js';
 
-import { ScriptType, defaultExtPrefix } from './common.js';
-
+import { ScriptType, defaultExtPrefix, extStates } from './common.js';
+import { 
+    getAllBlocks, getAllGeneratedBlocks, getAllRewriteBlocks, getAllScriptBlocks,
+    getAllEnabledBlocks, getPreviousBlockContextUnconditional
+} from './blocks.js';
+import { 
+    generateRewrite, handleRewriteBlocks, handleScriptBlocks, generateBlockContent,
+    handleGeneration, handleBlocksGeneration
+} from './handlers.js';
 
 const context = SillyTavern.getContext();
 
@@ -11,10 +18,9 @@ async function executeST(text) {
     await closure.execute();
 }
 
-
-function executeJS(text) {
+async function executeJS(text) {
     try {
-        eval(text);
+        await eval(`(async () => { ${text} })()`);
     } catch (error) {
         toastr.error(`${defaultExtPrefix} An error occurred in script: ${error.message}`);
     }
@@ -28,7 +34,7 @@ export async function handleScriptExecution(triggeredScriptBlocks) {
         if (blockScriptType === ScriptType.ST) {
             await executeST(blockScript);
         } else if (blockScriptType === ScriptType.JS) {
-            executeJS (blockScript);
+            await executeJS (blockScript);
         }
     };
 }

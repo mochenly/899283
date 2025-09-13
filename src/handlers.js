@@ -14,137 +14,145 @@ import { handleBlocksAccumulation } from './accumulationBlocks.js';
 import { handleScriptExecution } from './scriptsBlocks.js';
 
 
-export async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}, is_separate = false) {
-    const { generatedBlocks, rewriteBlocks, scriptBlocks } = triggeredBlocks.reduce((acc, block) => {
+export function categorizeBlocks(triggeredBlocks) {
+    return triggeredBlocks.reduce((acc, block) => {
         if (block.block_type === BlockType.REWRITE) {
             acc.rewriteBlocks.push(block);
         } else if (block.block_type === BlockType.SCRIPT) {
             acc.scriptBlocks.push(block);
-        }
-        else {
+        } else {
             acc.generatedBlocks.push(block);
         }
         return acc;
     }, { generatedBlocks: [], rewriteBlocks: [], scriptBlocks: [] });
+}
 
-    async function generateRewriteBlocks(generation_order) {
-        if (rewriteBlocks.length > 0 && rewriteBlocks.some(block => block.generation_order === generation_order)) {
-            toastr.info(`${defaultExtPrefix} Rewriting, please wait...`);
-            let isSuccess = true;
-            let isPartialSuccess = false;
-            for (let idx = 0; idx < rewriteBlocks.length; idx++) {
-                const rewriteBlock = rewriteBlocks[idx];
-                if (rewriteBlock.generation_order === generation_order) {
-                    const context = getBlockCombinedContext(rewriteBlock, messageId, allBlocks, additionalMacro);
-                    const template = `Block(s) template:\n${substituteParamsExtended(rewriteBlock.template, additionalMacro)}`;
-                    const prompt = `Block(s) prompt:\n${substituteParamsExtended(rewriteBlock.prompt, additionalMacro)}`;
-                    let fullPrompt = `${context}\n\n\n${template}\n\n${prompt}`;
-                    fullPrompt = await checkAllMacros(fullPrompt);
-                    const blocksData = await generateBlocks(fullPrompt, rewriteBlock.api_preset);
-                    const preset = rewriteBlock.api_preset ? extStates.ExtBlocks_settings.api_presets[rewriteBlock.api_preset] : extStates.api_preset;
-                    const blocks = extractMessageFromData(blocksData, preset);
-                    const rewrittenText = getMultiBlockContentFromMessage(blocks, 'rewritten text');
-                    if (rewrittenText && !rewrittenText.includes('Proxy error')) {
-                        chat[messageId].mes = rewrittenText;
-                        isPartialSuccess = true;
-                    } else {
-                        isSuccess = false;
-                    }
-                }
-            }
-            
-            if(chat[messageId].swipe_id && isPartialSuccess) {
-                chat[messageId].swipes[chat[messageId].swipe_id] = chat[messageId].mes;
-            }
+export async function generateRewrite(rewriteBlock, messageId, allBlocks, additionalMacro = {}) {
+    const context = getBlockCombinedContext(rewriteBlock, messageId, allBlocks, additionalMacro);
+    const template = `Block(s) template:\n${substituteParamsExtended(rewriteBlock.template, additionalMacro)}`;
+    const prompt = `Block(s) prompt:\n${substituteParamsExtended(rewriteBlock.prompt, additionalMacro)}`;
+    let fullPrompt = `${context}\n\n\n${template}\n\n${prompt}`;
+    fullPrompt = await checkAllMacros(fullPrompt);
 
-            if (isPartialSuccess) {
-                await updateBlocksDisplay(messageId);
-            }
+    const blocksData = await generateBlocks(fullPrompt, rewriteBlock.api_preset);
+    const preset = rewriteBlock.api_preset ? extStates.ExtBlocks_settings.api_presets[rewriteBlock.api_preset] : extStates.api_preset;
+    const blocks = extractMessageFromData(blocksData, preset);
+    return getMultiBlockContentFromMessage(blocks, 'rewritten text');
+}
 
-            if (isSuccess) {
-                toastr.success(`${defaultExtPrefix} Rewriting is done!`);
-            } else if (isPartialSuccess) {
-                toastr.warning(`${defaultExtPrefix} Rewriting probably failed.`);
-            } else {
-                toastr.error(`${defaultExtPrefix} Rewriting failed.`);
-            }
+export async function handleRewriteBlocks(rewriteBlocks, generation_order, messageId, allBlocks, additionalMacro = {}) {
+    const blocksToProcess = rewriteBlocks.filter(block => block.generation_order === generation_order);
+    if (blocksToProcess.length === 0) return;
+
+    toastr.info(`${defaultExtPrefix} Rewriting, please wait...`);
+    let isSuccess = true;
+    let isPartialSuccess = false;
+
+    for (const rewriteBlock of blocksToProcess) {
+        const rewrittenText = await generateRewrite(rewriteBlock, messageId, allBlocks, additionalMacro);
+
+        if (rewrittenText && !rewrittenText.includes('Proxy error')) {
+            chat[messageId].mes = rewrittenText;
+            isPartialSuccess = true;
+        } else {
+            isSuccess = false;
         }
     }
 
-    async function executeScriptBlocks(execution_order) {
-        if (scriptBlocks.length > 0) {
-            const currentScriptBlocks = scriptBlocks.filter(block => block.execution_order === execution_order);
-            if (currentScriptBlocks.length !== 0) {
-                await handleScriptExecution(currentScriptBlocks);
-            }
-        }
+    if (chat[messageId].swipe_id && isPartialSuccess) {
+        chat[messageId].swipes[chat[messageId].swipe_id] = chat[messageId].mes;
     }
 
-    await executeScriptBlocks('before');
-    await generateRewriteBlocks('before');
+    if (isPartialSuccess) {
+        await updateBlocksDisplay(messageId);
+    }
 
+    if (isSuccess) {
+        toastr.success(`${defaultExtPrefix} Rewriting is done!`);
+    } else if (isPartialSuccess) {
+        toastr.warning(`${defaultExtPrefix} Rewriting probably failed.`);
+    } else {
+        toastr.error(`${defaultExtPrefix} Rewriting failed.`);
+    }
+}
+
+export async function handleScriptBlocks(scriptBlocks, execution_order) {
+    const scriptsToExecute = scriptBlocks.filter(block => block.execution_order === execution_order);
+    if (scriptsToExecute.length > 0) {
+        await handleScriptExecution(scriptsToExecute);
+    }
+}
+
+export async function generateBlockContent(blocksInGroup, messageId, allBlocks, additionalMacro = {}) {
+    const apiPresetName = blocksInGroup[0].api_preset;
+    let combinedContext = '';
+    let combinedTemplate = `Block(s) template:\n${blocksInGroup.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
+    let combinedPrompt = `Block(s) prompt:\n${blocksInGroup.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
+
+    if (blocksInGroup.length > 0) {
+        combinedContext = getBlockCombinedContext(blocksInGroup[0], messageId, allBlocks, additionalMacro);
+    }
+
+    let fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
+    fullPrompt = await checkAllMacros(fullPrompt);
+
+    const blocksData = await generateBlocks(fullPrompt, apiPresetName);
+    const preset = apiPresetName ? extStates.ExtBlocks_settings.api_presets[apiPresetName] : extStates.api_preset;
+    let blocks = extractMessageFromData(blocksData, preset);
+
+    function removeBackticks(codeString) {
+        if (codeString.startsWith("```") && codeString.endsWith("```")) {
+            return codeString.slice(codeString.indexOf('\n') > -1 ? codeString.indexOf('\n') + 1 : 3, -3);
+        }
+        return codeString;
+    }
+    return removeBackticks(blocks);
+}
+
+export async function handleGeneration(generatedBlocks, messageId, allBlocks, additionalMacro = {}, is_separate = false) {
     const groupedBlocks = groupBlocksByContext(generatedBlocks);
-
     const blocksList = [];
 
-    if (Object.keys(groupedBlocks).length > 0) {
-        toastr.info(`${defaultExtPrefix} Generating, please wait...`);
-        for (let context in groupedBlocks) {
-            const blocksInGroup = groupedBlocks[context];
-            const apiPresetName = blocksInGroup[0].api_preset;
-            let combinedContext = '';
-            let combinedTemplate = `Block(s) template:\n${blocksInGroup.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
-            let combinedPrompt = `Block(s) prompt:\n${blocksInGroup.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
+    if (Object.keys(groupedBlocks).length === 0) return blocksList;
 
-            if (blocksInGroup.length != 0) {
-                const block = blocksInGroup[0];
-                combinedContext = getBlockCombinedContext(block, messageId, allBlocks, additionalMacro);
+    toastr.info(`${defaultExtPrefix} Generating, please wait...`);
+    for (const context in groupedBlocks) {
+        const blocksInGroup = groupedBlocks[context];
+        const blocks = await generateBlockContent(blocksInGroup, messageId, allBlocks, additionalMacro);
+
+        blocksList.push(blocks);
+        eventSource.emit('/extblocks/generated', blocks);
+
+        if (!is_separate) {
+            await addBlocksToExtra(messageId, blocks);
+        } else {
+            const message = {
+                name: 'System', is_user: false, is_system: true, mes: blocks, force_avatar: system_avatar,
+                extra: {
+                    type: system_message_types.NARRATOR, bias: null, gen_id: Date.now(),
+                    api: 'manual', model: 'slash command',
+                },
             };
-            
-            let fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
-            fullPrompt = await checkAllMacros(fullPrompt);
-            const blocksData = await generateBlocks(fullPrompt, apiPresetName);
-            const preset = apiPresetName ? extStates.ExtBlocks_settings.api_presets[apiPresetName] : extStates.api_preset;
-            let blocks = extractMessageFromData(blocksData, preset);
-            function removeBackticks(codeString) {
-                if (codeString.startsWith("```") && codeString.endsWith("```")) {
-                  return codeString.slice(codeString.indexOf('\n') > -1 ? codeString.indexOf('\n') + 1 : 3, -3);
-                }
-                return codeString;
-            }
-            blocks = removeBackticks(blocks);
-            blocksList.push(blocks);
-            eventSource.emit('/extblocks/generated', blocks);
-            
-            if (!is_separate) {
-                await addBlocksToExtra(messageId, blocks);
-            } else {
-                const message = {
-                    name: 'System',
-                    is_user: false,
-                    is_system: true,
-                    mes: blocks,
-                    force_avatar: system_avatar,
-                    extra: {
-                        type: system_message_types.NARRATOR,
-                        bias: null,
-                        gen_id: Date.now(),
-                        api: 'manual',
-                        model: 'slash command',
-                    },
-                };
-                chat.push(message);
-                await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
-                addOneMessage(message);
-                await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
-                await saveChatConditional();
-            };
+            chat.push(message);
+            await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+            addOneMessage(message);
+            await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+            await saveChatConditional();
         }
-        toastr.success(`${defaultExtPrefix} Generating is done!`);
     }
+    toastr.success(`${defaultExtPrefix} Generating is done!`);
+    return blocksList;
+}
 
-    await generateRewriteBlocks('after');
-    await executeScriptBlocks('after');
+export async function handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks, additionalMacro = {}, is_separate = false) {
+    const { generatedBlocks, rewriteBlocks, scriptBlocks } = categorizeBlocks(triggeredBlocks);
+    await handleScriptBlocks(scriptBlocks, 'before');
+    await handleRewriteBlocks(rewriteBlocks, 'before', messageId, allBlocks, additionalMacro);
+
+    const blocksList = await handleGeneration(generatedBlocks, messageId, allBlocks, additionalMacro, is_separate);
+
+    await handleRewriteBlocks(rewriteBlocks, 'after', messageId, allBlocks, additionalMacro);
+    await handleScriptBlocks(scriptBlocks, 'after');
 
     return blocksList;
 }
