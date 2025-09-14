@@ -3,7 +3,7 @@ import { SlashCommandParser } from '../../../../slash-commands/SlashCommandParse
 import { ScriptType, defaultExtPrefix, extStates } from './common.js';
 import { 
     getAllBlocks, getAllGeneratedBlocks, getAllRewriteBlocks, getAllScriptBlocks,
-    getAllEnabledBlocks, getPreviousBlockContextUnconditional
+    getAllEnabledBlocks, getPreviousBlockContextUnconditional, injectBlock
 } from './blocks.js';
 import { 
     generateRewrite, handleRewriteBlocks, handleScriptBlocks, generateBlockContent,
