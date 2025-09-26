@@ -69,6 +69,12 @@ function checkSettings() {
         autohide_display: extBlocksSettings.autohide_display ?? defaultSettings.autohide_display,
         autohide_prompt: extBlocksSettings.autohide_prompt ?? defaultSettings.autohide_prompt,
     });
+    for (const presetName in extBlocksSettings.api_presets) {
+        const preset = extBlocksSettings.api_presets[presetName];
+        preset.top_p = preset.top_p ?? defaultApiPreset.top_p;
+        preset.max_tokens = preset.max_tokens ?? defaultApiPreset.max_tokens;
+        preset.reasoning_effort = preset.reasoning_effort ?? defaultApiPreset.reasoning_effort;
+    }
     saveSettingsDebounced();
 }
 
@@ -254,6 +260,21 @@ async function setupListeners() {
     $('#ExtBlocks-proxy-temperature').off('click').on('input', function () {
         const value = $('#ExtBlocks-proxy-temperature').val();
         extStates.api_preset.temperature = parseFloat(String(value));
+        saveSettingsDebounced();
+    });
+    $('#ExtBlocks-proxy-topp').off('click').on('input', function () {
+        const value = $('#ExtBlocks-proxy-topp').val();
+        extStates.api_preset.top_p = parseFloat(String(value));
+        saveSettingsDebounced();
+    });
+    $('#ExtBlocks-proxy-maxtokens').off('click').on('input', function () {
+        const value = $('#ExtBlocks-proxy-maxtokens').val();
+        extStates.api_preset.max_tokens = parseInt(String(value), 10);
+        saveSettingsDebounced();
+    });
+    $('#ExtBlocks-proxy-reasoningeffort').off('click').on('change', function () {
+        const value = $('#ExtBlocks-proxy-reasoningeffort').val();
+        extStates.api_preset.reasoning_effort = value;
         saveSettingsDebounced();
     });
     $('#ExtBlocks-proxy-system').off('click').on('input', function () {

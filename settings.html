@@ -152,6 +152,34 @@
                     </label>
                     <input id="ExtBlocks-proxy-temperature" class="text_pole" type="number" min="0" max="2.0" step="0.01">
                 </div>
+                
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-temperature" data-i18n="Top P">
+                        Top P:
+                    </label>
+                    <input id="ExtBlocks-proxy-topp" class="text_pole" type="number" min="0" max="1.0" step="0.01">
+                </div>
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-temperature" data-i18n="Max Tokens">
+                        Max Tokens:
+                    </label>
+                    <input id="ExtBlocks-proxy-maxtokens" class="text_pole" type="number" min="0" step="1">
+                </div>
+
+                <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-proxy-reasoningeffort" data-i18n="Reasoning Effort">
+                        Reasoning Effort:
+                    </label>
+                    <select id="ExtBlocks-proxy-reasoningeffort" class="text_pole">
+                        <option value="auto">Auto</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="min">Min</option>
+                        <option value="max">Max</option>
+                    </select>
+                </div>
 
                 <div class="flex-container flexFlowColumn">
                     <label for="ExtBlocks-proxy-system" data-i18n="System Prompt">

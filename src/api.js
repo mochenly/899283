@@ -2,9 +2,17 @@ import { substituteParamsExtended, getRequestHeaders } from '../../../../../scri
 import { proxies, chat_completion_sources } from '../../../../openai.js';
 import { getEventSourceStream } from '../../../../sse-stream.js';
 
-import { extStates, defaultSettings, MessageRole } from './common.js';
+import { extStates, MessageRole } from './common.js';
 import { refreshSettings } from './utils.js';
 
+export const reasoning_effort_types = {
+    AUTO: 'auto',
+    LOW: 'low',
+    MEDIUM: 'medium',
+    HIGH: 'high',
+    MIN: 'min',
+    MAX: 'max',
+};
 
 export async function loadApiPreset() {
     await refreshSettings();
@@ -30,6 +38,9 @@ export async function loadApiPreset() {
     $('#ExtBlocks-proxy-ccmodel').val(modelValue).trigger('change');
     
     $('#ExtBlocks-proxy-temperature').val(preset.temperature);
+    $('#ExtBlocks-proxy-topp').val(preset.top_p);
+    $('#ExtBlocks-proxy-maxtokens').val(preset.max_tokens);
+    $('#ExtBlocks-proxy-reasoningeffort').val(preset.reasoning_effort);
     $('#ExtBlocks-proxy-system').val(preset.system_prompt);
     $('#ExtBlocks-proxy-prefill').val(preset.assistant_prefill);
     $('#ExtBlocks-proxy-stream').prop('checked', preset.stream);
@@ -77,9 +88,10 @@ export async function generateBlocks(prompt, apiPresetName) {
         'model': preset.model,
         'temperature': preset.temperature,
         'stream': stream,
-        'top_p': 1,
         'chat_completion_source': preset.chat_completion_source,
-        'max_tokens': 4096
+        'top_p': preset.top_p,
+        'max_tokens': preset.max_tokens,
+        'reasoning_effort': preset.reasoning_effort
     };
     const proxy_preset = proxies.find(p => p.name === preset.proxy_preset);
     if (preset.chat_completion_source !== chat_completion_sources.OPENROUTER) {
@@ -94,12 +106,10 @@ export async function generateBlocks(prompt, apiPresetName) {
     if (preset.confirmation_jb) {
         messages.push({ role: MessageRole.ASSISTANT, content: "[Please confirm your request]" })
         messages.push({ role: MessageRole.USER, content: "[I confirm]" })
-    }
-
-    if (preset.chat_completion_source === chat_completion_sources.CLAUDE) {
+    } else if (preset.chat_completion_source === chat_completion_sources.CLAUDE) {
         generate_data['claude_use_sysprompt'] = true;
         generate_data['assistant_prefill'] = substituteParamsExtended(preset.assistant_prefill);
-    } else if (preset.assistant_prefill !== '' && !preset.model.includes('deepseek-r') && !preset.model.includes('gemini-2.0-flash-thinking-exp')) {
+    } else if (preset.assistant_prefill !== '') {
         messages.push({ role: MessageRole.ASSISTANT, content: preset.assistant_prefill })
     }
 
