@@ -1,6 +1,7 @@
 import { saveSettingsDebounced, reloadCurrentChat, this_chid } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
 import { getSortableDelay } from '../../../../utils.js';
+import { loadBlocks } from './blocks.js';
 
 import { defaultSet, extStates } from './common.js';
 

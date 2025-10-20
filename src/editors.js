@@ -254,6 +254,7 @@ export async function openEditor(existingId, isScoped) {
     }
     
     let existingBlockIndex = -1;
+    let blockApiPreset = 'big';
     if (existingId) {
         existingBlockIndex = array.findIndex((block) => block.id === existingId);
         if (existingBlockIndex !== -1) {
@@ -266,6 +267,7 @@ export async function openEditor(existingId, isScoped) {
                 return;
             }
 
+            blockApiPreset = existingBlock.api_preset;
             const blockType = existingBlock.block_type ?? BlockType.GENERATED;
             editorHtml.find(`select[name="ExtBlocks-editor-block-type"]`).val(blockType);
             editorHtml.find('.ExtBlocks-editor-block-template').val(existingBlock.template ?? '');
@@ -423,7 +425,8 @@ export async function openEditor(existingId, isScoped) {
             injection_position: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-position"]`).val())),
             injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val() || 4)),
             generation_order: editorHtml.find(`select[name="ExtBlocks-editor-generation-order"]`).val() || 'before',
-            context: contextItems
+            context: contextItems,
+            api_preset: blockApiPreset
         };
 
         saveBlock(newBlock, existingBlockIndex, isScoped);
