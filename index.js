@@ -466,11 +466,14 @@ jQuery(async () => {
                     firstSwipeBlockExtra(messageId);
                 }
                 await handleUserTrigger(messageId - 1, true);
-            }     
+                await swipeBlockExtra(messageId, current_swipe_id, false);
+            } else {
+                await swipeBlockExtra(messageId, current_swipe_id);
+            }
         } else {
             await checkBlocksInFirstMessage();
+            await swipeBlockExtra(messageId, current_swipe_id);
         }
-        await swipeBlockExtra(messageId, current_swipe_id);
     });
 
     eventSource.on("/fatpresets/import/extblocks", ({ setObject, returnCode }) => {

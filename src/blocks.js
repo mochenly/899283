@@ -169,14 +169,16 @@ export function getAllPreviousBlocks() {
     return blocksStrArray.join('\n\n');
 }
 
-export async function swipeBlockExtra(messageId, swipeId) {
+export async function swipeBlockExtra(messageId, swipeId, updateDisplay = true) {
     if (chat[messageId].swipe_info[swipeId] && chat[messageId].swipe_info[swipeId].extra && chat[messageId].swipe_info[swipeId].extra.extblocks) {
         chat[messageId].extra.extblocks = chat[messageId].swipe_info[swipeId].extra.extblocks;
     } else {
         chat[messageId].extra.extblocks = '';
     }
 
-    await updateBlocksDisplay(messageId);
+    if (updateDisplay) {
+        await updateBlocksDisplay(messageId);
+    }
 }
 
 export function firstSwipeBlockExtra(messageId) {
