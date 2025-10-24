@@ -53,23 +53,23 @@ export async function openEditor(existingId, isScoped) {
         editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).val(context_item.type).trigger('change');
         editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).on('change', handleContextItemTypeChange);
 
-        if (context_item.type === 'text') {
+        if (context_item.type === ContextType.TEXT) {
             editorHtml.find('.ExtBlocks-editor-context-builder-text-content').val(context_item.text);
-        } else if (context_item.type === 'last_messages') {
+        } else if (context_item.type === ContextType.LAST_MESSAGES) {
             editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val(context_item.messages_count);
             editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val(context_item.messages_separator);
             editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val(context_item.user_prefix);
             editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val(context_item.user_suffix);
             editorHtml.find('.ExtBlocks-editor-context-builder-messages-charprefix').val(context_item.char_prefix);
             editorHtml.find('.ExtBlocks-editor-context-builder-messages-charsuffix').val(context_item.char_suffix);
-        } else if (context_item.type === 'last_messages_keyword') {
+        } else if (context_item.type === ContextType.LAST_MESSAGES_KEYWORD) {
             editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-keywordstopper').val(context_item.keyword_stopper);
-            editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val(context_item.messages_separator);
-            editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val(context_item.user_prefix);
-            editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val(context_item.user_suffix);
-            editorHtml.find('.ExtBlocks-editor-context-builder-messages-charprefix').val(context_item.char_prefix);
-            editorHtml.find('.ExtBlocks-editor-context-builder-messages-charsuffix').val(context_item.char_suffix);
-        } else if (context_item.type === 'previous_block') {
+            editorHtml.find('select[name="ExtBlocks-editor-context-builder-keywordmessages-separator"]').val(context_item.messages_separator);
+            editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-userprefix').val(context_item.user_prefix);
+            editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-usersuffix').val(context_item.user_suffix);
+            editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-charprefix').val(context_item.char_prefix);
+            editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-charsuffix').val(context_item.char_suffix);
+        } else if (context_item.type === ContextType.PREVIOUS_BLOCK) {
             editorHtml.find('.ExtBlocks-editor-context-builder-block-name').val(context_item.block_name);
             editorHtml.find('input[name="ExtBlocks-editor-context-builder-block-count"]').val(context_item.block_count ?? 1);
         }
@@ -137,14 +137,14 @@ export async function openEditor(existingId, isScoped) {
             const id = contextItems[editingContextItemIndex].id;
             const name = String(editorHtml.find('.ExtBlocks-editor-context-builder-name').val());
             const context_type = editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).val();
-            if (context_type === 'text') {
+            if (context_type === ContextType.TEXT) {
                 context_item = {
                     id: id,
                     name: name,
                     type: context_type,
                     text: String(editorHtml.find('.ExtBlocks-editor-context-builder-text-content').val())
                 };
-            } else if (context_type === 'last_messages') {
+            } else if (context_type === ContextType.LAST_MESSAGES) {
                 context_item = {
                     id: id,
                     name: name,
@@ -156,19 +156,19 @@ export async function openEditor(existingId, isScoped) {
                     char_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charprefix').val()).replace(/\\n/g, '\n'),
                     char_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charsuffix').val()).replace(/\\n/g, '\n')
                 };
-            } else if (context_type === 'last_messages_keyword') {
+            } else if (context_type === ContextType.LAST_MESSAGES_KEYWORD) {
                 context_item = {
                     id: id,
                     name: name,
                     type: context_type,
                     keyword_stopper: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-keywordstopper').val()) || '',
-                    messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val()),
-                    user_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val()).replace(/\\n/g, '\n'),
-                    user_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val()).replace(/\\n/g, '\n'),
-                    char_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charprefix').val()).replace(/\\n/g, '\n'),
-                    char_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charsuffix').val()).replace(/\\n/g, '\n')
+                    messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-keywordmessages-separator"]').val()),
+                    user_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-userprefix').val()).replace(/\\n/g, '\n'),
+                    user_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-usersuffix').val()).replace(/\\n/g, '\n'),
+                    char_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-charprefix').val()).replace(/\\n/g, '\n'),
+                    char_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-charsuffix').val()).replace(/\\n/g, '\n')
                 };
-            } else if (context_type === 'previous_block') {
+            } else if (context_type === ContextType.PREVIOUS_BLOCK) {
                 context_item = {
                     id: id,
                     name: name,
@@ -377,11 +377,11 @@ export async function openEditor(existingId, isScoped) {
                 name: name,
                 type: context_type,
                 keyword_stopper: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-keywordstopper').val()) || '',
-                messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val()),
-                user_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val()).replace(/\\n/g, '\n'),
-                user_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val()).replace(/\\n/g, '\n'),
-                char_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charprefix').val()).replace(/\\n/g, '\n'),
-                char_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-charsuffix').val()).replace(/\\n/g, '\n')
+                messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-keywordmessages-separator"]').val()),
+                user_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-userprefix').val()).replace(/\\n/g, '\n'),
+                user_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-usersuffix').val()).replace(/\\n/g, '\n'),
+                char_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-charprefix').val()).replace(/\\n/g, '\n'),
+                char_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-charsuffix').val()).replace(/\\n/g, '\n')
             };
         } else if (context_type === ContextType.PREVIOUS_BLOCK) {
             context_item = {
