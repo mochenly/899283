@@ -57,6 +57,7 @@ export async function openEditor(existingId, isScoped) {
             editorHtml.find('.ExtBlocks-editor-context-builder-text-content').val(context_item.text);
         } else if (context_item.type === ContextType.LAST_MESSAGES) {
             editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val(context_item.messages_count);
+            editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-offset"]').val(context_item.messages_offset ?? 0);
             editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val(context_item.messages_separator);
             editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val(context_item.user_prefix);
             editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val(context_item.user_suffix);
@@ -85,6 +86,7 @@ export async function openEditor(existingId, isScoped) {
 
         editorHtml.find('.ExtBlocks-editor-context-builder-text-content').val('');
         editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val('');
+        editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-offset"]').val('');
         editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val('double_newline');
         editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val('');
         editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val('');
@@ -150,6 +152,7 @@ export async function openEditor(existingId, isScoped) {
                     name: name,
                     type: context_type,
                     messages_count: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val())) || 10,
+                    messages_offset: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-offset"]').val())) || 0,
                     messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val()),
                     user_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val()).replace(/\\n/g, '\n'),
                     user_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val()).replace(/\\n/g, '\n'),
@@ -365,6 +368,7 @@ export async function openEditor(existingId, isScoped) {
                 name: name,
                 type: context_type,
                 messages_count: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val())) || 10,
+                messages_offset: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-offset"]').val())) || 0,
                 messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val()),
                 user_prefix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val()).replace(/\\n/g, '\n'),
                 user_suffix: String(editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val()).replace(/\\n/g, '\n'),
