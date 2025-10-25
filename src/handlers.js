@@ -213,7 +213,7 @@ export async function handleUserTrigger(messageId, is_swipe = false) {
         return;
     }
 
-    if ((!is_swipe) || (is_swipe && extStates.is_chat_modified)) {
+    if ((!is_swipe) || (is_swipe && extStates.is_chat_modified && chat[messageId].is_user)) {
         await purgeBlocksExtra(messageId, true);
         extStates.is_chat_modified = false;
         await handleMessageTrigger(messageId, true);
