@@ -424,9 +424,9 @@ export async function loadBlocks() {
         const presetButtonIcon = presetButtonContainer.find('i');
         const presets = ['big', 'medium', 'small'];
         const presetIcons = {
-            'big': 'fa-temperature-full',
-            'medium': 'fa-temperature-half',
-            'small': 'fa-temperature-empty',
+            'big': 'fa-battery-full',
+            'medium': 'fa-battery-half',
+            'small': 'fa-battery-empty',
         };
         const presetTitles = {
             'big': 'API Preset: Big',
@@ -441,7 +441,7 @@ export async function loadBlocks() {
         let currentPreset = block.api_preset;
 
         const updateIcon = () => {
-            presetButtonIcon.removeClass('fa-temperature-full fa-temperature-half fa-temperature-empty');
+            presetButtonIcon.removeClass('fa-battery-full fa-battery-half fa-battery-empty');
             const iconClass = presetIcons[currentPreset];
             presetButtonIcon.addClass(iconClass);
             presetButtonContainer.attr('title', presetTitles[currentPreset]);
