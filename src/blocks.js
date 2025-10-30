@@ -557,9 +557,9 @@ export function getLastMessagesContext(item, messageId) {
         return '';
     }
     let separator;
-    if (item.messages_separator == 'newline') {
+    if (item.messages_separator === 'newline') {
         separator = '\n'
-    } else if (item.separator == 'space') {
+    } else if (item.separator === 'space') {
         separator = ' '
     } else {
         separator = '\n\n'
@@ -572,7 +572,7 @@ export function getLastMessagesContext(item, messageId) {
         suffix = substituteParamsExtended(suffix);
         const placement = is_user_message ? 1 : 2;
         const depth = messages_count - index - 1;
-        return `${prefix}${getRegexedString(message.mes, placement, {depth: depth, isPrompt: true})}${suffix}`;
+        return `${prefix}${getRegexedString(message.mes.trim(), placement, {depth: depth, isPrompt: true})}${suffix}`;
     }).join(separator);
 
     return combinedLastMessages;
