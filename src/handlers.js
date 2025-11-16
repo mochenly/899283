@@ -176,7 +176,25 @@ export async function handleMessageTrigger(messageId, isUser) {
         }
 
         if (extStates.generationPaused) {
-            return block.generation_pause;
+            if (!block.generation_pause) {
+                return false;
+            }
+            if (block.keyword && block.keyword !== '') {
+                let keyword_predicate;
+                if (block.keyword_is_regex) {
+                    try {
+                        const regex = stringToRegex(block.keyword);
+                        keyword_predicate = regex.test(chat[messageId].mes);
+                    } catch (e) {
+                        console.error(`ExtBlocks: Invalid regex for block "${block.name}": ${block.keyword}`, e);
+                        keyword_predicate = false;
+                    }
+                } else {
+                    keyword_predicate = chat[messageId].mes.includes(block.keyword);
+                }
+                return keyword_predicate;
+            }
+            return false;
         }
 
         const trigger_predicate = isUser ? block.user_message : block.char_message;
