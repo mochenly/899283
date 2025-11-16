@@ -278,7 +278,8 @@ export async function openEditor(existingId, isScoped) {
 
             editorHtml.find('input[name="user_message"]').prop('checked', existingBlock.user_message ?? false);
             editorHtml.find('input[name="char_message"]').prop('checked', existingBlock.char_message ?? true);
-
+            editorHtml.find('input[name="generation_pause"]').prop('checked', existingBlock.generation_pause ?? false);
+ 
             const block_keyword = existingBlock.keyword;
             const trigger_periodicity = (block_keyword && block_keyword !== '') ? "keyword" : "periodic";
             editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val(trigger_periodicity);
@@ -314,8 +315,22 @@ export async function openEditor(existingId, isScoped) {
     editorHtml.find(`select[name="ExtBlocks-editor-block-type"]`).off('click').on('change', (event) => {
         const value = editorHtml.find(`select[name="ExtBlocks-editor-block-type"]`).val();
         handleBlockTypeChange(value);
-    })
+    });
 
+    function handleGenerationPauseChange() {
+        const isPaused = editorHtml.find('input[name="generation_pause"]').is(':checked');
+        editorHtml.find('input[name="user_message"]').prop('disabled', isPaused);
+        editorHtml.find('input[name="char_message"]').prop('disabled', isPaused);
+
+        if (isPaused) {
+            editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).val('keyword').trigger('change');
+        }
+        editorHtml.find(`select[name="ExtBlocks-editor-trigger-periodicity"]`).prop('disabled', isPaused);
+    }
+
+    editorHtml.find('input[name="generation_pause"]').on('change', handleGenerationPauseChange);
+    handleGenerationPauseChange();
+ 
     let sortableContextItems = [
         {
             selector: editorHtml.find('#ExtBlocks-editor-context-list'),
@@ -420,6 +435,7 @@ export async function openEditor(existingId, isScoped) {
             prompt: String(editorHtml.find('.ExtBlocks-editor-block-prompt').val()),
             user_message: editorHtml.find('input[name="user_message"]').prop('checked'),
             char_message: editorHtml.find('input[name="char_message"]').prop('checked'),
+            generation_pause: editorHtml.find('input[name="generation_pause"]').prop('checked'),
             period: parseInt(String(editorHtml.find('input[name="period"]').val() || 2)),
             keyword: block_keyword,
             keyword_is_regex: editorHtml.find('input[name="keyword_is_regex"]').prop('checked'),
@@ -523,12 +539,14 @@ export async function openScriptEditor(existingId, isScoped) {
 
             editorHtml.find('input[name="user_message"]').prop('checked', existingBlock.user_message ?? false);
             editorHtml.find('input[name="char_message"]').prop('checked', existingBlock.char_message ?? true);
-
+            editorHtml.find('input[name="generation_pause"]').prop('checked', existingBlock.generation_pause ?? false);
+ 
             const block_keyword = existingBlock.keyword;
             const trigger_periodicity = (block_keyword && block_keyword !== '') ? "keyword" : "periodic";
             editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).val(trigger_periodicity);
             editorHtml.find('input[name="period"]').val(existingBlock.period ?? 2);
             editorHtml.find('input[name="keyword"]').val(block_keyword ?? '');
+            editorHtml.find('input[name="keyword_is_regex"]').prop('checked', existingBlock.keyword_is_regex ?? false);
             changeTriggerPeriodicity(trigger_periodicity);
 
             editorHtml.find('input[name="disabled"]').prop('checked', existingBlock.disabled ?? false);
@@ -546,6 +564,20 @@ export async function openScriptEditor(existingId, isScoped) {
         changeTriggerPeriodicity(value);
     });
 
+    function handleGenerationPauseChange() {
+        const isPaused = editorHtml.find('input[name="generation_pause"]').is(':checked');
+        editorHtml.find('input[name="user_message"]').prop('disabled', isPaused);
+        editorHtml.find('input[name="char_message"]').prop('disabled', isPaused);
+
+        if (isPaused) {
+            editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).val('keyword').trigger('change');
+        }
+        editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).prop('disabled', isPaused);
+    }
+
+    editorHtml.find('input[name="generation_pause"]').on('change', handleGenerationPauseChange);
+    handleGenerationPauseChange();
+ 
     const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save', wide: true });
     if (popupResult) {
         const trigger_periodicity = editorHtml.find(`select[name="ExtBlocks-scripteditor-trigger-periodicity"]`).val();
@@ -559,8 +591,10 @@ export async function openScriptEditor(existingId, isScoped) {
             disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
             user_message: editorHtml.find('input[name="user_message"]').prop('checked'),
             char_message: editorHtml.find('input[name="char_message"]').prop('checked'),
+            generation_pause: editorHtml.find('input[name="generation_pause"]').prop('checked'),
             period: parseInt(String(editorHtml.find('input[name="period"]').val() || 2)),
             keyword: block_keyword,
+            keyword_is_regex: editorHtml.find('input[name="keyword_is_regex"]').prop('checked'),
             execution_order: editorHtml.find(`select[name="ExtBlocks-editor-execution-order"]`).val() || 'before'
         };
 

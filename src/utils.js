@@ -137,3 +137,23 @@ export async function interactiveSortData(sortableDatas) {
         });
     }
 }
+export function stringToRegex(str) {
+    try {
+        let pattern;
+        let flags = "";
+  
+        const slashedMatch = str.match(/^\/(.*?)\/([gimyus]*)$/);
+        if (slashedMatch) {
+            pattern = slashedMatch[1];
+            flags = slashedMatch[2];
+        } else {
+            pattern = str;
+        }
+    
+        return new RegExp(pattern, flags);
+  
+    } catch (error) {
+        console.error("Error converting string to RegExp:", error);
+        return null;
+    }
+}

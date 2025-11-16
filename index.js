@@ -1,5 +1,5 @@
 import { saveSettingsDebounced, callPopup, this_chid, characters, eventSource,
-     event_types, chat } from '../../../../script.js';
+     event_types, chat, stopGeneration } from '../../../../script.js';
 import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { download, uuidv4 } from '../../../utils.js';
@@ -9,17 +9,17 @@ import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.j
 
 import { defaultExtPrefix, extStates, path, templates_path, ElementTemplate, ExtSlashCommand, editButton,
     extName, defaultSettings, defaultApiPreset } from './src/common.js';
-import { interactiveSortData, selfReloadCurrentChat, getDefaultSet, updateOrInsert, refreshSettings, getRegexForBlock } from './src/utils.js';
+import { interactiveSortData, selfReloadCurrentChat, getDefaultSet, updateOrInsert, refreshSettings, getRegexForBlock, stringToRegex } from './src/utils.js';
 import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocksFromExtra,
     purgeBlocksExtra, addBlocksToExtra, loadBlocks, updateBlocksDisplay, checkBlocksInFirstMessage,
-    firstSwipeBlockExtra, swipeBlockExtra
+    firstSwipeBlockExtra, swipeBlockExtra, getAllEnabledBlocks
  } from './src/blocks.js';
 import { populateBlockMacrosBuffer, purgeAllBlocksMacros } from './src/macros.js';
 import { changeSet, importSet, importSetFromObject, refreshSetList } from './src/sets.js';
 import { loadAPI, loadApiPreset } from './src/api.js';
 import { handleUserTrigger, handleCharTrigger, handleBlocksGeneration,
     runBlockGenerationCallback, appendStringToExtraCallback, purgeExtraCallback, runBlockRegenerationCallback,
-    runRewriteBlocksCallback, runScriptsExecutionCallback, exportBlocksCallback
+    runRewriteBlocksCallback, runScriptsExecutionCallback, exportBlocksCallback, handleMessageTrigger
  } from './src/handlers.js';
 import { openEditor, openAccumulationEditor, openScriptEditor } from './src/editors.js';
 
@@ -420,6 +420,7 @@ jQuery(async () => {
             extStates.is_chat_modified = false;
             await loadBlocks();
             populateBlockMacrosBuffer();
+            extStates.cachedPauseRegexes = null;
         }
 
         addEditButtons();
@@ -446,7 +447,12 @@ jQuery(async () => {
             return;
         }
 
-        if (messageId !== 0) {
+        extStates.cachedPauseRegexes = null;
+        if (extStates.generationPaused) {
+            await handleMessageTrigger(messageId, false);
+            extStates.generationPaused = false;
+            $('#send_but').trigger('click');
+        } else if (messageId !== 0) {
             await handleCharTrigger(messageId);
             await updateBlocksDisplay(messageId - 2)
         } else {
@@ -476,6 +482,29 @@ jQuery(async () => {
         }
     });
 
+    eventSource.makeFirst(event_types.STREAM_TOKEN_RECEIVED, (text) => {
+        if (!extension_settings.ExtBlocks.extblocks_is_enabled || extStates.generationPaused) {
+            return;
+        }
+
+        if (extStates.cachedPauseRegexes === null) {
+            const allBlocks = getAllEnabledBlocks();
+            extStates.cachedPauseRegexes = allBlocks
+                .filter(b => b.generation_pause && b.keyword)
+                .map(b => stringToRegex(b.keyword))
+                .filter(Boolean);
+        }
+    
+        for (const regex of extStates.cachedPauseRegexes) {
+            if (regex.test(text)) {
+                extStates.generationPaused = true;
+                extStates.cachedPauseRegexes = null;
+                stopGeneration();
+                return;
+            }
+        }
+    });
+ 
     eventSource.on("/fatpresets/import/extblocks", ({ setObject, returnCode }) => {
         const isOk = importSetFromObject(setObject);
         returnCode.code = isOk;

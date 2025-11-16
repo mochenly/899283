@@ -9,7 +9,7 @@ import { getBlockCombinedContext, updateBlocksDisplay, groupBlocksByContext, add
 import { checkAllMacros } from './macros.js';
 import { generateBlocks } from './api.js';
 import { extractMessageFromData } from './api.js';
-import { getMultiBlockContentFromMessage, getBlockFromMessage } from './utils.js';
+import { getMultiBlockContentFromMessage, getBlockFromMessage, stringToRegex } from './utils.js';
 import { handleBlocksAccumulation } from './accumulationBlocks.js';
 import { handleScriptExecution } from './scriptsBlocks.js';
 
@@ -174,21 +174,17 @@ export async function handleMessageTrigger(messageId, isUser) {
         if (block.block_type === BlockType.ACCUMULATION) {
             return false;
         }
+
+        if (extStates.generationPaused) {
+            return block.generation_pause;
+        }
+
         const trigger_predicate = isUser ? block.user_message : block.char_message;
         if (block.keyword && block.keyword !== '') {
             let keyword_predicate;
             if (block.keyword_is_regex) {
                 try {
-                    let regex;
-                    const keyword = block.keyword;
-                    if (keyword.startsWith('/') && keyword.lastIndexOf('/') > 0) {
-                        const lastSlash = keyword.lastIndexOf('/');
-                        const content = keyword.substring(1, lastSlash);
-                        const flags = keyword.substring(lastSlash + 1);
-                        regex = new RegExp(content, flags);
-                    } else {
-                        regex = new RegExp(keyword);
-                    }
+                    const regex = stringToRegex(block.keyword);
                     keyword_predicate = regex.test(chat[messageId].mes);
                 } catch (e) {
                     console.error(`ExtBlocks: Invalid regex for block "${block.name}": ${block.keyword}`, e);
@@ -202,7 +198,6 @@ export async function handleMessageTrigger(messageId, isUser) {
             const period_predicate = isUser ? ((messageId - 1) % block.period === 0) : (messageId % block.period === 0);
             return trigger_predicate && period_predicate;
         }
-        
     });
     await handleBlocksGeneration(messageId, isUser, allBlocks, triggeredBlocks);
 }

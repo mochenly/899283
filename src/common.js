@@ -46,10 +46,11 @@ export const extStates = {
     api_preset: undefined,
     spoilerRegex: undefined,
     self_reload_flag: false,
-    is_chat_modified: false
-
+    is_chat_modified: false,
+    generationPaused: false,
+    cachedPauseRegexes: null
+ 
 }
-
 export const path = 'third-party/extblocks';
 export const templates_path = path + '/templates';
 

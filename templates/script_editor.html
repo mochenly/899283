@@ -74,6 +74,13 @@
                         </label>
                     </div>
 
+                    <div title="Stops generation when a keyword is found.">
+                        <label class="checkbox flex-container">
+                            <input type="checkbox" name="generation_pause">
+                            <span data-i18n="Generation Pause">Generation Pause</span>
+                        </label>
+                    </div>
+ 
                     <div class="flex-container wide100p marginTop5">
                         <div class="flex1 flex-container flexNoGap">
                             <small data-i18n="[title]ExtBlocks-scripteditor-trigger-periodicity-desc" title="">
@@ -99,10 +106,18 @@
 
                     <div class="ExtBlocks-scripteditor-keyword-wrapper flex-container wide100p marginTop5">
                         <div class="flex1 flex-container flexNoGap">
-                            <small data-i18n="[title]ExtBlocks-scripteditor-keyword-desc" title="">
-                                <span data-i18n="Keyword">Keyword</span>
-                                <span class="fa-solid fa-circle-question note-link-span"></span>
-                            </small>
+                            <div class="flex-container" style="align-items: baseline; justify-content: space-between;">
+                                <small data-i18n="[title]ExtBlocks-scripteditor-keyword-desc" title="">
+                                    <span data-i18n="Keyword">Keyword</span>
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </small>
+                                <div title="The keyword will be treated as a regular expression.">
+                                    <label class="checkbox flex-container">
+                                        <input type="checkbox" name="keyword_is_regex" />
+                                        <span data-i18n="Regex">Regex</span>
+                                    </label>
+                                </div>
+                            </div>
                             <input
                             name="keyword"
                             class="ExtBlocks-scripteditor-keyword text_pole textarea_compact"
