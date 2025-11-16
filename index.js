@@ -452,6 +452,7 @@ jQuery(async () => {
             await handleMessageTrigger(messageId, false);
             extStates.generationPaused = false;
             $('#send_but').trigger('click');
+            toastr.info(`${defaultExtPrefix} Generation resumed...`);
         } else if (messageId !== 0) {
             await handleCharTrigger(messageId);
             await updateBlocksDisplay(messageId - 2)
@@ -499,6 +500,7 @@ jQuery(async () => {
             if (regex.test(text)) {
                 extStates.generationPaused = true;
                 extStates.cachedPauseRegexes = null;
+                toastr.info(`${defaultExtPrefix} Generation paused...`);
                 stopGeneration();
                 return;
             }
