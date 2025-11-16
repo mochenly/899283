@@ -94,7 +94,6 @@ In the edit window, you can set the following for a block:
 		- `In Chat`: Injects into the chat at a certain depth, works correctly with user and assistant roles.
 	- `Injection Depth`: The depth for chat injection. Negative values insert the block from the beginning of the chat, positive values from the end.
 
-!!! info
 	**Example of an accumulative block**
 	The lines of an accumulative block must have a constant structure: `Property: Value`.
 	The following value types are supported: string (e.g., `Name`), number (e.g., `Gold`), and array (e.g., `Inventory`).
@@ -112,7 +111,6 @@ In the edit window, you can set the following for a block:
 	</example>
 	```
 
-!!! info
 	**Example of an updater block**
 	The updater block supports several operations: assignment (e.g., `Name`), addition/subtraction for numeric values (e.g., `Gold`), and adding/removing items from an array (e.g., `Inventory`).
 	Note the lack of a space after `+` for addition/subtraction, and the presence of a space for adding/removing items.
@@ -155,7 +153,6 @@ In the edit window, you can set the following for a block:
 	- `Previous block`: The content of the previous instance of this block.
 - **Context Order**: Displayed at the bottom right; items can be moved up/down or deleted. Context can be imported and exported. Blocks with the same context and trigger will be generated in a single API call (respecting their period).
 
-!!! info
 	**Final prompt for generated blocks sent to the secondary API:**
 	- Merged context (separated by `\n`)
 	- `\n` x 3
@@ -164,7 +161,6 @@ In the edit window, you can set the following for a block:
 	- Merged block prompts (separated by `\n`)
 	- System prompt and prefill are sent separately (e.g., for Claude).
 
-!!! info
 	**Example of a correct name-template-prompt combination for a generated block:**
 	**Block Name:**
 	`current time`
@@ -181,7 +177,6 @@ In the edit window, you can set the following for a block:
 A subtype of generated blocks, but instead of being injected, they rewrite the main response. The editor has an additional `Generation Order` parameter to control whether the block rewrites the message before or after other blocks are generated.
 The template for rewrite blocks must contain a `<rewritten text>` block; the rest of the content is flexible. The block name can be anything, unlike regular generated blocks.
 
-!!! info
 	**Example of a correct name-template-prompt combination for a rewrite block:**
 	**Block Name:**
 	`basic rewrite`
@@ -359,18 +354,18 @@ Generated blocks are stored within messages and can be edited. Click the three d
 ## Macros
 
 ### Global Macros
-!!! info
+
 	Macros that can be used anywhere in SillyTavern.
 -   `{{extblock:block_name}}`: Access the last state of a specific block.
 
 ### Local Macros
-!!! info
+
 	Macros that can only be used in the prompt, template, and context of a generated block.
 -   **Lorebook Macros** (only for entries that are always active or activated by the block's context+template+prompt):
-    -   `{{wiBefore}}`: Lorebook entries with position ↑Char.
-    -   `{{wiAfter}}`: Lorebook entries with position ↓Char.
-    -   `{{wiExamples}}`: Lorebook entries with position ↑EM and ↓EM.
-    -   `{{wiDepth}}`: Lorebook entries with position @D.
+    -   `{{wiBefore}}`: Lorebook entries with position `↑Char`.
+    -   `{{wiAfter}}`: Lorebook entries with position `↓Char`.
+    -   `{{wiExamples}}`: Lorebook entries with position `↑EM` and `↓EM`.
+    -   `{{wiDepth}}`: Lorebook entries with position `@D`.
     -   `{{wiAll}}`: All activated lorebook entries.
 -   `{{mainPrompt}}`: The main prompt of the current preset.
 -   `{{additionalPrompt}}` The additional prompt passed through a slash command.
