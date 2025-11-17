@@ -160,6 +160,12 @@ export async function handleBlocksGeneration(messageId, isUser, allBlocks, trigg
 
 export async function handleMessageTrigger(messageId, isUser) {
     const allBlocks = getAllEnabledBlocks();
+    let messageText = chat[messageId].mes;
+
+    if (extStates.pauseCounter > 0 && !isUser) {
+        const messagesToCombine = chat.slice(Math.max(0, messageId - extStates.pauseCounter), messageId + 1);
+        messageText = messagesToCombine.map(m => m.mes).join('\n');
+    }
 
     const triggeredAccumulationBlocks = allBlocks.filter((block) => {
         if (block.block_type !== BlockType.ACCUMULATION) {
@@ -203,13 +209,13 @@ export async function handleMessageTrigger(messageId, isUser) {
             if (block.keyword_is_regex) {
                 try {
                     const regex = stringToRegex(block.keyword);
-                    keyword_predicate = regex.test(chat[messageId].mes);
+                    keyword_predicate = regex.test(messageText);
                 } catch (e) {
                     console.error(`ExtBlocks: Invalid regex for block "${block.name}": ${block.keyword}`, e);
                     keyword_predicate = false;
                 }
             } else {
-                keyword_predicate = chat[messageId].mes.includes(block.keyword);
+                keyword_predicate = messageText.includes(block.keyword);
             }
             return trigger_predicate && keyword_predicate;
         } else {
@@ -227,6 +233,7 @@ export async function handleUserTrigger(messageId, is_swipe = false) {
     }
 
     if ((!is_swipe) || (is_swipe && extStates.is_chat_modified && chat[messageId].is_user)) {
+        extStates.pauseCounter = 0;
         await purgeBlocksExtra(messageId, true);
         extStates.is_chat_modified = false;
         await handleMessageTrigger(messageId, true);

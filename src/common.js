@@ -49,7 +49,8 @@ export const extStates = {
     is_chat_modified: false,
     generationPaused: false,
     cachedPauseBlocks: null,
-    triggeredPauseBlock: null
+    triggeredPauseBlock: null,
+    pauseCounter: 0
  
 }
 export const path = 'third-party/extblocks';

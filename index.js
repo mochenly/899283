@@ -421,6 +421,7 @@ jQuery(async () => {
             await loadBlocks();
             populateBlockMacrosBuffer();
             extStates.cachedPauseBlocks = null;
+            extStates.pauseCounter = 0;
         }
 
         addEditButtons();
@@ -451,11 +452,14 @@ jQuery(async () => {
         if (extStates.generationPaused) {
             await handleMessageTrigger(messageId, false);
             extStates.generationPaused = false;
-            setTimeout(() => $('#send_but').trigger('click'), 1000);
-            toastr.info(`${defaultExtPrefix} Generation resumed...`);
+            setTimeout(() => {
+                $('#send_but').trigger('click');
+                toastr.info(`${defaultExtPrefix} Generation resumed...`);
+            }, 1000);
         } else if (messageId !== 0) {
             await handleCharTrigger(messageId);
-            await updateBlocksDisplay(messageId - 2)
+            await updateBlocksDisplay(messageId - 2);
+            extStates.pauseCounter = 0;
         } else {
             await checkBlocksInFirstMessage();
         }
@@ -525,6 +529,7 @@ jQuery(async () => {
         for (const item of extStates.cachedPauseBlocks) {
             if (item.regex.test(text)) {
                 extStates.generationPaused = true;
+                extStates.pauseCounter++;
                 extStates.triggeredPauseBlock = item.block;
                 extStates.cachedPauseBlocks = null;
                 toastr.info(`${defaultExtPrefix} Generation paused...`);

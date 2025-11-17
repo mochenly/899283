@@ -540,7 +540,17 @@ export function getLastMessagesContext(item, messageId) {
     if (messages_count === undefined) {
         const keyword_stopper = item.keyword_stopper;
         if (keyword_stopper && keyword_stopper !== '') {
-            let lastMessageId = unhided_chat.slice(0, -1).findLastIndex(message => message.mes.includes(keyword_stopper));
+            let lastMessageId;
+            if (extStates.pauseCounter > 0) {
+                const last_message_combined = unhided_chat.slice(-extStates.pauseCounter - 1).map(m => m.mes).join('\n');
+                if (last_message_combined.includes(keyword_stopper)) {
+                    lastMessageId = unhided_chat.slice(0, -extStates.pauseCounter - 1).findLastIndex(message => message.mes.includes(keyword_stopper));
+                } else {
+                    lastMessageId = unhided_chat.slice(0, -1).findLastIndex(message => message.mes.includes(keyword_stopper));
+                }
+            } else {
+                lastMessageId = unhided_chat.slice(0, -1).findLastIndex(message => message.mes.includes(keyword_stopper));
+            }
             if (lastMessageId == -1) {
                 lastMessageId = 0;
             }
