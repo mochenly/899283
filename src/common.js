@@ -48,7 +48,8 @@ export const extStates = {
     self_reload_flag: false,
     is_chat_modified: false,
     generationPaused: false,
-    cachedPauseRegexes: null
+    cachedPauseBlocks: null,
+    triggeredPauseBlock: null
  
 }
 export const path = 'third-party/extblocks';

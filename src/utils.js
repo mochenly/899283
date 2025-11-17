@@ -137,23 +137,55 @@ export async function interactiveSortData(sortableDatas) {
         });
     }
 }
+
 export function stringToRegex(str) {
     try {
-        let pattern;
-        let flags = "";
-  
-        const slashedMatch = str.match(/^\/(.*?)\/([gimyus]*)$/);
-        if (slashedMatch) {
-            pattern = slashedMatch[1];
-            flags = slashedMatch[2];
-        } else {
-            pattern = str;
+        if (str.startsWith('/')) {
+            const lastSlash = str.lastIndexOf('/');
+            if (lastSlash > 0) {
+                const pattern = str.substring(1, lastSlash);
+                const flags = str.substring(lastSlash + 1);
+                const validFlags = 'gimyus';
+                for (const char of flags) {
+                    if (!validFlags.includes(char)) {
+                        return new RegExp(str);
+                    }
+                }
+                return new RegExp(pattern, flags);
+            }
         }
-    
-        return new RegExp(pattern, flags);
-  
+        return new RegExp(str);
     } catch (error) {
         console.error("Error converting string to RegExp:", error);
         return null;
     }
+}
+
+export function removeAfterSubstring(str, substring) {
+    const index = str.indexOf(substring);
+    if (index === -1) {
+        return str;
+    }
+    return str.slice(0, index);
+}
+
+export function removeAfterRegexMatch(str, regex) {
+    const match = regex.exec(str);
+    if (match) {
+        return str.slice(0, match.index);
+    }
+    return str;
+}
+
+export function removeAfterLastNewline(str) {
+    const lastNewlineIndex = str.lastIndexOf('\n');
+    let stringToTrim;
+
+    if (lastNewlineIndex !== -1) {
+        stringToTrim = str.slice(0, lastNewlineIndex + 1);
+    } else {
+        stringToTrim = str;
+    }
+
+    return stringToTrim.trimEnd();
 }

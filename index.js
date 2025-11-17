@@ -1,5 +1,5 @@
 import { saveSettingsDebounced, callPopup, this_chid, characters, eventSource,
-     event_types, chat, stopGeneration } from '../../../../script.js';
+     event_types, chat, stopGeneration, updateMessageBlock, saveChatConditional } from '../../../../script.js';
 import { selected_group } from '../../../group-chats.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { download, uuidv4 } from '../../../utils.js';
@@ -9,7 +9,7 @@ import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.j
 
 import { defaultExtPrefix, extStates, path, templates_path, ElementTemplate, ExtSlashCommand, editButton,
     extName, defaultSettings, defaultApiPreset } from './src/common.js';
-import { interactiveSortData, selfReloadCurrentChat, getDefaultSet, updateOrInsert, refreshSettings, getRegexForBlock, stringToRegex } from './src/utils.js';
+import { interactiveSortData, selfReloadCurrentChat, getDefaultSet, updateOrInsert, refreshSettings, getRegexForBlock, stringToRegex, removeAfterSubstring, removeAfterRegexMatch } from './src/utils.js';
 import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocksFromExtra,
     purgeBlocksExtra, addBlocksToExtra, loadBlocks, updateBlocksDisplay, checkBlocksInFirstMessage,
     firstSwipeBlockExtra, swipeBlockExtra, getAllEnabledBlocks
@@ -420,7 +420,7 @@ jQuery(async () => {
             extStates.is_chat_modified = false;
             await loadBlocks();
             populateBlockMacrosBuffer();
-            extStates.cachedPauseRegexes = null;
+            extStates.cachedPauseBlocks = null;
         }
 
         addEditButtons();
@@ -447,11 +447,11 @@ jQuery(async () => {
             return;
         }
 
-        extStates.cachedPauseRegexes = null;
+        extStates.cachedPauseBlocks = null;
         if (extStates.generationPaused) {
             await handleMessageTrigger(messageId, false);
             extStates.generationPaused = false;
-            $('#send_but').trigger('click');
+            setTimeout(() => $('#send_but').trigger('click'), 1000);
             toastr.info(`${defaultExtPrefix} Generation resumed...`);
         } else if (messageId !== 0) {
             await handleCharTrigger(messageId);
@@ -461,6 +461,32 @@ jQuery(async () => {
         }
         addEditButtonToLastMessage();
     });
+
+    eventSource.makeFirst(event_types.MESSAGE_RECEIVED, async (messageId) => {
+        if (!extension_settings.ExtBlocks.extblocks_is_enabled || !extStates.generationPaused || !extStates.triggeredPauseBlock) {
+            return;
+        }
+    
+        const block = extStates.triggeredPauseBlock;
+        const message = chat[messageId];
+    
+        if (block.keyword_is_regex) {
+            const regex = stringToRegex(block.keyword);
+            message.mes = removeAfterRegexMatch(message.mes, regex);
+        } else {
+            message.mes = removeAfterSubstring(message.mes, block.keyword);
+        }
+    
+        if (message.swipes) {
+            message.swipes[message.swipe_id] = message.mes;
+        }
+    
+        extStates.triggeredPauseBlock = null;
+    
+        updateMessageBlock(messageId, message, { rerenderMessage: true });
+        await saveChatConditional();
+    });
+    
     eventSource.makeFirst(event_types.MESSAGE_SWIPED, async (messageId) => {
         if (!extension_settings.ExtBlocks.extblocks_is_enabled) {
             return;
@@ -488,18 +514,19 @@ jQuery(async () => {
             return;
         }
 
-        if (extStates.cachedPauseRegexes === null) {
+        if (extStates.cachedPauseBlocks === null) {
             const allBlocks = getAllEnabledBlocks();
-            extStates.cachedPauseRegexes = allBlocks
+            extStates.cachedPauseBlocks = allBlocks
                 .filter(b => b.generation_pause && b.keyword)
-                .map(b => stringToRegex(b.keyword))
-                .filter(Boolean);
+                .map(b => ({ block: b, regex: stringToRegex(b.keyword) }))
+                .filter(item => item.regex);
         }
     
-        for (const regex of extStates.cachedPauseRegexes) {
-            if (regex.test(text)) {
+        for (const item of extStates.cachedPauseBlocks) {
+            if (item.regex.test(text)) {
                 extStates.generationPaused = true;
-                extStates.cachedPauseRegexes = null;
+                extStates.triggeredPauseBlock = item.block;
+                extStates.cachedPauseBlocks = null;
                 toastr.info(`${defaultExtPrefix} Generation paused...`);
                 stopGeneration();
                 return;
