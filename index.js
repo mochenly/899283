@@ -16,7 +16,7 @@ import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocks
  } from './src/blocks.js';
 import { populateBlockMacrosBuffer, purgeAllBlocksMacros } from './src/macros.js';
 import { changeSet, importSet, importSetFromObject, refreshSetList } from './src/sets.js';
-import { loadAPI, loadApiPreset } from './src/api.js';
+import { loadAPI, loadApiPreset, abortGeneration } from './src/api.js';
 import { handleUserTrigger, handleCharTrigger, handleBlocksGeneration,
     runBlockGenerationCallback, appendStringToExtraCallback, purgeExtraCallback, runBlockRegenerationCallback,
     runRewriteBlocksCallback, runScriptsExecutionCallback, exportBlocksCallback, handleMessageTrigger
@@ -681,6 +681,13 @@ jQuery(async () => {
             })
         ],
         helpString: 'Executes script blocks.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: ExtSlashCommand.ABORT,
+        callback: abortGeneration,
+        returns: 'void',
+        helpString: 'Aborts the current block generation.',
     }));
 
     console.log(`${defaultExtPrefix} extension loaded`);

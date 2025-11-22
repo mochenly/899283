@@ -50,8 +50,8 @@ export const extStates = {
     generationPaused: false,
     cachedPauseBlocks: null,
     triggeredPauseBlock: null,
-    pauseCounter: 0
- 
+    pauseCounter: 0,
+    abortController: null,
 }
 export const path = 'third-party/extblocks';
 export const templates_path = path + '/templates';
@@ -100,7 +100,8 @@ export const ExtSlashCommand = {
     STORAGE_APPEND: 'extblocks-storage-append',
     STORAGE_PURGE: 'extblocks-storage-purge',
     STORAGE_EXPORT: 'extblocks-storage-export',
-    FLUSH_INJECTS: 'extblocks-flushinjects'
+    FLUSH_INJECTS: 'extblocks-flushinjects',
+    ABORT: 'extblocks-abort-generation'
 }
 
 export const editButton = `<div title="Edit extblocks" class="mes_button Extblocks-storage-edit fa-solid fa-pen-to-square interactable" data-i18n="[title]Edit extblocks" tabindex="0"></div>`;

@@ -2,7 +2,7 @@ import { substituteParamsExtended, getRequestHeaders } from '../../../../../scri
 import { proxies, chat_completion_sources } from '../../../../openai.js';
 import { getEventSourceStream } from '../../../../sse-stream.js';
 
-import { extStates, MessageRole } from './common.js';
+import { extStates, MessageRole, defaultExtPrefix } from './common.js';
 import { refreshSettings } from './utils.js';
 
 export const reasoning_effort_types = {
@@ -113,13 +113,15 @@ export async function generateBlocks(prompt, apiPresetName) {
         messages.push({ role: MessageRole.ASSISTANT, content: preset.assistant_prefill })
     }
 
+    extStates.abortController = new AbortController();
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
         method: 'POST',
         body: JSON.stringify(generate_data),
         headers: getRequestHeaders(),
-        signal: new AbortController().signal,
+        signal: extStates.abortController.signal,
     });
+    extStates.abortController = null;
 
     if (response.ok) {
         let data;
@@ -169,5 +171,13 @@ export function extractMessageFromData(data, preset) {
         } else {
             return data.choices[0].message.content.trim();
         }
+    }
+}
+
+export function abortGeneration() {
+    if (extStates.abortController) {
+        extStates.abortController.abort();
+        extStates.abortController = null;
+        toastr.info(`${defaultExtPrefix} Generation aborted.`);
     }
 }
