@@ -456,9 +456,11 @@ jQuery(async () => {
                 $('#send_but').trigger('click');
                 toastr.info(`${defaultExtPrefix} Generation resumed...`);
             }, 1000);
-        } else if (messageId > 2) {
+        } else if (messageId > 0) {
             await handleCharTrigger(messageId);
-            await updateBlocksDisplay(messageId - 2);
+            if (messageId > 2) {
+                await updateBlocksDisplay(messageId - 2);
+            }
             extStates.pauseCounter = 0;
         } else {
             await checkBlocksInFirstMessage();
