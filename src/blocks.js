@@ -4,7 +4,7 @@ import { extension_settings, writeExtensionField, renderExtensionTemplateAsync }
 import { getRegexedString } from '../../../../extensions/regex/engine.js'
 import { download, getFileText, uuidv4 } from '../../../../utils.js';
 
-import { defaultExtPrefix, extStates, templates_path, BlockType, ContextType, extName, ElementTemplate } from './common.js';
+import { defaultExtPrefix, extStates, templates_path, BlockType, ContextType, extName, ElementTemplate, MessageRole } from './common.js';
 import { selfReloadCurrentChat, getRegexForBlock, getBlockEncloseRegex, updateOrInsert, refreshSettings,
     getBlockFromMessageWithRegex, getBlockFromMessage
  } from './utils.js';
@@ -325,26 +325,46 @@ export async function deleteBlock({ id, isScoped }) {
     }
 }
 
+function getContextItemContent(context_item, messageId, allBlocks, additionalMacro) {
+    if (context_item.type === ContextType.TEXT) {
+        return substituteParamsExtended(context_item.text, additionalMacro);
+    } else if (context_item.type === ContextType.LAST_MESSAGES || context_item.type === ContextType.LAST_MESSAGES_KEYWORD) {
+        return getLastMessagesContext(context_item, messageId);
+    } else if (context_item.type === ContextType.PREVIOUS_BLOCK) {
+        return getPreviousBlockContext(context_item, messageId, allBlocks);
+    }
+    return '';
+}
+
 export function getBlockCombinedContext(block, messageId, allBlocks, additionalMacro = {}) {
-    let contextStringArray = [];
-    block.context.forEach((context_item) => {
-        if (context_item.type === ContextType.TEXT) {
-            contextStringArray.push(substituteParamsExtended(context_item.text, additionalMacro));
-
-        } else if (context_item.type === ContextType.LAST_MESSAGES || context_item.type === ContextType.LAST_MESSAGES_KEYWORD) {
-            const lastMessages = getLastMessagesContext(context_item, messageId);
-            if (lastMessages != '') {
-                contextStringArray.push(lastMessages);
-            }
-
-        } else if (context_item.type === ContextType.PREVIOUS_BLOCK) {
-            const previousBlock = getPreviousBlockContext(context_item, messageId, allBlocks);
-            if (previousBlock !== '') {
-                contextStringArray.push(previousBlock);
-            }
+    const contextMessages = [];
+    let currentRole = null;
+    let currentContent = [];
+    
+    const flushCurrent = () => {
+        if (currentContent.length > 0) {
+            contextMessages.push({
+                role: currentRole || MessageRole.USER,
+                content: currentContent.join('\n')
+            });
+            currentContent = [];
         }
+    };
+
+    block.context.forEach((context_item) => {
+        const content = getContextItemContent(context_item, messageId, allBlocks, additionalMacro);
+        if (!content) return;
+        
+        const role = context_item.role || MessageRole.USER;
+        if (role !== currentRole) {
+            flushCurrent();
+            currentRole = role;
+        }
+        currentContent.push(content);
     });
-    return contextStringArray.join('\n');
+
+    flushCurrent();
+    return contextMessages;
 }
 
 export function getSingleBlockFullPrompt(block) {

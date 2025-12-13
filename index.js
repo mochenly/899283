@@ -277,11 +277,6 @@ async function setupListeners() {
         extStates.api_preset.reasoning_effort = value;
         saveSettingsDebounced();
     });
-    $('#ExtBlocks-proxy-system').off('click').on('input', function () {
-        const value = $('#ExtBlocks-proxy-system').val();
-        extStates.api_preset.system_prompt = String(value);
-        saveSettingsDebounced();
-    });
     $('#ExtBlocks-proxy-prefill').off('click').on('input', function () {
         const value = $('#ExtBlocks-proxy-prefill').val();
         extStates.api_preset.assistant_prefill = String(value);

@@ -39,20 +39,26 @@ export function populateBlockMacrosBuffer() {
 }
 
 export async function checkWorldInfoMacros(prompt) {
-    const containsWorldInfoMacros = worldInfoMacrosNames.some(wiMacros => prompt.includes(wiMacros));
+    const containsWorldInfoMacros = prompt.some(message => 
+        worldInfoMacrosNames.some(wiMacros => message.content.includes(wiMacros))
+    );
+    
     if (containsWorldInfoMacros && this_chid !== undefined) {
-        const promptChat = [ prompt ];
+        const promptChat = prompt.map(msg => msg.content).reverse();
         const maxContext = 2e5;
         const activatedWorldInfo = await checkWorldInfo(promptChat, maxContext, true, {});
+        
         let worldInfoAll = [];
         let worldInfoBefore = activatedWorldInfo.worldInfoBefore;
         if (worldInfoBefore !== '') {
             worldInfoAll.push(worldInfoBefore);
         }
+        
         let worldInfoAfter = activatedWorldInfo.worldInfoAfter;
         if (worldInfoAfter !== '') {
             worldInfoAll.push(worldInfoAfter);
         }
+        
         let worldInfoExamples = activatedWorldInfo.EMEntries ?? [];
         if (worldInfoExamples.length !== 0) {
             worldInfoExamples = worldInfoExamples.map(item => item.content).join('\n\n');
@@ -60,6 +66,7 @@ export async function checkWorldInfoMacros(prompt) {
         } else {
             worldInfoExamples = '';
         }
+        
         let worldInfoDepth = activatedWorldInfo.WIDepthEntries ?? [];
         if (worldInfoDepth.length !== 0) {
             worldInfoDepth = worldInfoDepth.map(item => item.entries.join('\n')).join('\n\n');
@@ -67,29 +74,50 @@ export async function checkWorldInfoMacros(prompt) {
         } else {
             worldInfoDepth = '';
         }
+        
         worldInfoAll = worldInfoAll.join('\n\n');
 
-        prompt = prompt.replace(/{{wiBefore}}/gi, worldInfoBefore);
-        prompt = prompt.replace(/{{wiAfter}}/gi, worldInfoAfter);
-        prompt = prompt.replace(/{{wiExamples}}/gi, worldInfoExamples);
-        prompt = prompt.replace(/{{wiDepth}}/gi, worldInfoDepth);
-        prompt = prompt.replace(/{{wiAll}}/gi, worldInfoAll);
+        prompt = prompt.map(message => {
+            let content = message.content;
+            content = content.replace(/{{wiBefore}}/gi, worldInfoBefore);
+            content = content.replace(/{{wiAfter}}/gi, worldInfoAfter);
+            content = content.replace(/{{wiExamples}}/gi, worldInfoExamples);
+            content = content.replace(/{{wiDepth}}/gi, worldInfoDepth);
+            content = content.replace(/{{wiAll}}/gi, worldInfoAll);
+            
+            return {
+                ...message,
+                content
+            };
+        });
     }
 
     return prompt;
 }
 
 export function checkMainPromptMacros(prompt) {
-    if (prompt.includes(mainPromptMacros)) {
+    const containsMainPromptMacros = prompt.some(message => 
+        message.content.includes(mainPromptMacros)
+    );
+    
+    if (containsMainPromptMacros) {
         const promptCollection = setupChatCompletionPromptManager(oai_settings).getPromptCollection();
-        let mainPrompt = promptCollection.collection.find(prompt => prompt.identifier === 'main');
+        let mainPrompt = promptCollection.collection.find(p => p.identifier === 'main');
         if (mainPrompt) {
             mainPrompt = mainPrompt.content;
         } else {
             mainPrompt = '';
         }
 
-        prompt = prompt.replace(/{{mainPrompt}}/gi, mainPrompt);
+        prompt = prompt.map(message => {
+            if (message.content.includes(mainPromptMacros)) {
+                return {
+                    ...message,
+                    content: message.content.replace(/{{mainPrompt}}/gi, mainPrompt)
+                };
+            }
+            return message;
+        });
     }
 
     return prompt;

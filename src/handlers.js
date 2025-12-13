@@ -1,7 +1,7 @@
 import { substituteParamsExtended, this_chid, eventSource, event_types, chat,
     addOneMessage, system_message_types, system_avatar, saveChatConditional } from '../../../../../script.js';
 
-import { defaultExtPrefix, extStates, BlockType } from './common.js';
+import { defaultExtPrefix, extStates, BlockType, MessageRole } from './common.js';
 import { getBlockCombinedContext, updateBlocksDisplay, groupBlocksByContext, addBlocksToExtra,
     getAllEnabledBlocks, purgeBlocksExtra, getPreviousBlockContextUnconditional, injectBlock, getAllGeneratedBlocks,
     getAllRewriteBlocks, getAllPreviousBlocks, getAllScriptBlocks
@@ -85,7 +85,7 @@ export async function handleScriptBlocks(scriptBlocks, execution_order) {
 
 export async function generateBlockContent(blocksInGroup, messageId, allBlocks, additionalMacro = {}) {
     const apiPresetName = blocksInGroup[0].api_preset;
-    let combinedContext = '';
+    let combinedContext = [];
     let combinedTemplate = `Block(s) template:\n${blocksInGroup.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
     let combinedPrompt = `Block(s) prompt:\n${blocksInGroup.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
 
@@ -93,10 +93,17 @@ export async function generateBlockContent(blocksInGroup, messageId, allBlocks, 
         combinedContext = getBlockCombinedContext(blocksInGroup[0], messageId, allBlocks, additionalMacro);
     }
 
-    let fullPrompt = `${combinedContext}\n\n\n${combinedTemplate}\n\n${combinedPrompt}`;
-    fullPrompt = await checkAllMacros(fullPrompt);
+    if (combinedContext.length > 0 && combinedContext[0].role === MessageRole.SYSTEM) {
+        combinedContext[0].content = `${combinedPrompt}\n\n${combinedTemplate}\n\n${combinedContext[0].content}`
+    } else if (combinedContext.length > 0) {
+        combinedContext.unshift({ role: MessageRole.SYSTEM, content: `${combinedPrompt}\n\n${combinedTemplate}` });
+    } else {
+        combinedContext = [{ role: MessageRole.USER, content: `${combinedPrompt}\n\n${combinedTemplate}` }];
+    }
 
-    const blocksData = await generateBlocks(fullPrompt, apiPresetName);
+    combinedContext = await checkAllMacros(combinedContext);
+
+    const blocksData = await generateBlocks(combinedContext, apiPresetName);
     const preset = apiPresetName ? extStates.ExtBlocks_settings.api_presets[apiPresetName] : extStates.api_preset;
     let blocks = extractMessageFromData(blocksData, preset);
 

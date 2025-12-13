@@ -41,7 +41,6 @@ export async function loadApiPreset() {
     $('#ExtBlocks-proxy-topp').val(preset.top_p);
     $('#ExtBlocks-proxy-maxtokens').val(preset.max_tokens);
     $('#ExtBlocks-proxy-reasoningeffort').val(preset.reasoning_effort);
-    $('#ExtBlocks-proxy-system').val(preset.system_prompt);
     $('#ExtBlocks-proxy-prefill').val(preset.assistant_prefill);
     $('#ExtBlocks-proxy-stream').prop('checked', preset.stream);
     $('#ExtBlocks-enable-jb').prop('checked', preset.confirmation_jb ?? false);
@@ -76,13 +75,9 @@ function getStreamingReply(data) {
 }
 
 
-export async function generateBlocks(prompt, apiPresetName) {
-    let messages = [{ role: MessageRole.USER, content: prompt.trim() }];
+export async function generateBlocks(messages, apiPresetName) {
     const preset = apiPresetName ? extStates.ExtBlocks_settings.api_presets[apiPresetName] : extStates.api_preset;
     const stream = preset.stream ?? false;
-    if (preset.system_prompt !== '') {
-        messages.unshift({ role: MessageRole.SYSTEM, content: substituteParamsExtended(preset.system_prompt.trim()) });
-    }
     let generate_data = {
         'messages': messages,
         'model': preset.model,

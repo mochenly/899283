@@ -2,7 +2,7 @@ import { callPopup, this_chid, characters } from '../../../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../../../extensions.js';
 import { download, getFileText, uuidv4 } from '../../../../utils.js';
 
-import { ElementTemplate, ContextType, templates_path, BlockType } from './common.js';
+import { ElementTemplate, ContextType, templates_path, BlockType, MessageRole } from './common.js';
 import { interactiveSortData } from './utils.js';
 import { saveBlock } from './blocks.js';
 
@@ -48,6 +48,7 @@ export async function openEditor(existingId, isScoped) {
 
     function loadContextItemForEditing(context_item) {
         editorHtml.find('.ExtBlocks-editor-context-builder-name').val(context_item.name);
+        editorHtml.find('select[name="ExtBlocks-editor-context-builder-role"]').val(context_item.role ?? MessageRole.USER);
 
         editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).off('change', handleContextItemTypeChange);
         editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).val(context_item.type).trigger('change');
@@ -83,6 +84,7 @@ export async function openEditor(existingId, isScoped) {
     function exitEditMode(context_type='text') {
         editingContextItemIndex = -1;
         editorHtml.find('.ExtBlocks-editor-context-builder-name').val('');
+        editorHtml.find('select[name="ExtBlocks-editor-context-builder-role"]').val(MessageRole.USER);
 
         editorHtml.find('.ExtBlocks-editor-context-builder-text-content').val('');
         editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val('');
@@ -138,11 +140,13 @@ export async function openEditor(existingId, isScoped) {
             let context_item;
             const id = contextItems[editingContextItemIndex].id;
             const name = String(editorHtml.find('.ExtBlocks-editor-context-builder-name').val());
+            const role = String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-role"]').val()) || MessageRole.USER;
             const context_type = editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).val();
             if (context_type === ContextType.TEXT) {
                 context_item = {
                     id: id,
                     name: name,
+                    role: role,
                     type: context_type,
                     text: String(editorHtml.find('.ExtBlocks-editor-context-builder-text-content').val())
                 };
@@ -150,6 +154,7 @@ export async function openEditor(existingId, isScoped) {
                 context_item = {
                     id: id,
                     name: name,
+                    role: role,
                     type: context_type,
                     messages_count: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val())) || 10,
                     messages_offset: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-offset"]').val())) || 0,
@@ -163,6 +168,7 @@ export async function openEditor(existingId, isScoped) {
                 context_item = {
                     id: id,
                     name: name,
+                    role: role,
                     type: context_type,
                     keyword_stopper: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-keywordstopper').val()) || '',
                     messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-keywordmessages-separator"]').val()),
@@ -175,6 +181,7 @@ export async function openEditor(existingId, isScoped) {
                 context_item = {
                     id: id,
                     name: name,
+                    role: role,
                     type: context_type,
                     block_name: String(editorHtml.find('.ExtBlocks-editor-context-builder-block-name').val()),
                     block_count: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-block-count"]').val())) || 1
@@ -369,11 +376,13 @@ export async function openEditor(existingId, isScoped) {
         let context_item;
         const id = uuidv4();
         const name = String(editorHtml.find('.ExtBlocks-editor-context-builder-name').val());
+        const role = String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-role"]').val()) || MessageRole.USER;
         const context_type = editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).val();
         if (context_type === ContextType.TEXT) {
             context_item = {
                 id: id,
                 name: name,
+                role: role,
                 type: context_type,
                 text: String(editorHtml.find('.ExtBlocks-editor-context-builder-text-content').val())
             };
@@ -381,6 +390,7 @@ export async function openEditor(existingId, isScoped) {
             context_item = {
                 id: id,
                 name: name,
+                role: role,
                 type: context_type,
                 messages_count: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val())) || 10,
                 messages_offset: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-offset"]').val())) || 0,
@@ -394,6 +404,7 @@ export async function openEditor(existingId, isScoped) {
             context_item = {
                 id: id,
                 name: name,
+                role: role,
                 type: context_type,
                 keyword_stopper: String(editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-keywordstopper').val()) || '',
                 messages_separator: String(editorHtml.find('select[name="ExtBlocks-editor-context-builder-keywordmessages-separator"]').val()),
@@ -406,6 +417,7 @@ export async function openEditor(existingId, isScoped) {
             context_item = {
                 id: id,
                 name: name,
+                role: role,
                 type: context_type,
                 block_name: String(editorHtml.find('.ExtBlocks-editor-context-builder-block-name').val()),
                 block_count: parseInt(String(editorHtml.find('input[name="ExtBlocks-editor-context-builder-block-count"]').val())) || 1
