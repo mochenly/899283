@@ -30,7 +30,6 @@ export async function createRegexForBlocks(forceReload = false, updateDisplayTex
         await updateAllBlocksDisplayText();
         await selfReloadCurrentChat();
     } else if (updateDisplayTextOnly && this_chid !== undefined) {
-        console.log("Updating display text")
         await updateAllBlocksDisplayText();
     }
 

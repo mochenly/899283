@@ -100,14 +100,14 @@ export async function generateBlocks(prompt, apiPresetName) {
     }
 
     if (preset.chat_completion_source === chat_completion_sources.MAKERSUITE) {
-        generate_data['use_makersuite_sysprompt'] = true;
+        generate_data['use_sysprompt'] = true;
     }
 
     if (preset.confirmation_jb) {
         messages.push({ role: MessageRole.ASSISTANT, content: "[Please confirm your request]" })
         messages.push({ role: MessageRole.USER, content: "[I confirm]" })
     } else if (preset.chat_completion_source === chat_completion_sources.CLAUDE) {
-        generate_data['claude_use_sysprompt'] = true;
+        generate_data['use_sysprompt'] = true;
         generate_data['assistant_prefill'] = substituteParamsExtended(preset.assistant_prefill);
     } else if (preset.assistant_prefill !== '') {
         messages.push({ role: MessageRole.ASSISTANT, content: preset.assistant_prefill })
