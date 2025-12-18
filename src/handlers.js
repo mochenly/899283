@@ -286,7 +286,7 @@ export async function runBlockGenerationCallback(args, additional_prompt) {
     if (blocks.length > 0) {
         const messageId = chat.length - 1;
         let additionalMacro = {};
-        if (additional_prompt !== '') {
+        if (additional_prompt) {
             additionalMacro = { additionalPrompt: substituteParamsExtended(additional_prompt) }
         }
         let is_separate = false;
@@ -312,7 +312,7 @@ export async function runRewriteBlocksCallback(args, additional_prompt) {
     if (blocks.length > 0) {
         const messageId = chat.length - 1;
         let additionalMacro = {};
-        if (additional_prompt !== '') {
+        if (additional_prompt) {
             additionalMacro = { additionalPrompt: substituteParamsExtended(additional_prompt) }
         }
         let is_separate = false;

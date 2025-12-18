@@ -6,10 +6,14 @@ import { checkWorldInfo } from '../../../../world-info.js';
 
 import { mainPromptMacros, worldInfoMacrosNames, extName } from './common.js';
 import { getAllEnabledBlocks, getPreviousBlockContextUnconditional } from './blocks.js';
+import { runBlockGenerationCallback, runRewriteBlocksCallback, runScriptsExecutionCallback } from './handlers.js'
 
 const MacroName = {
     MAIN: `${extName}`,
     GET_BLOCK_BY_NAME: `${extName}-GetBlockByName`,
+    CALL_GENERATION: `${extName}-Call`,
+    CALL_REWRITE: `${extName}-CallRewrite`,
+    CALL_SCRIPT: `${extName}-CallScript`
 }
 
 export function registerExtensionMacros() {
@@ -35,6 +39,72 @@ export function registerExtensionMacros() {
             if (!block) return '';
             else return getPreviousBlockContextUnconditional(block, chat.length - 1, true);
 
+        }
+    });
+
+    macros.registry.registerMacro(MacroName.CALL_GENERATION, {
+        category: extName,
+        description: 'Calls block generation by block name.',
+        unnamedArgs: [
+            {
+                name: 'name',
+                description: 'Block name or blocks names, separated by comma.',
+                type: 'string',
+            },
+            {
+                name: 'additional_prompt',
+                description: 'Additional prompt for blocks.',
+                optional: true,
+                type: "string"
+            }
+        ],
+        returns: '',
+        handler: async ({ unnamedArgs: [name, additional_prompt] }) => {
+            if (this_chid === undefined) return '';
+            await runBlockGenerationCallback({ name }, additional_prompt);
+            return '';
+        }
+    });
+
+    macros.registry.registerMacro(MacroName.CALL_REWRITE, {
+        category: extName,
+        description: 'Calls message rewrite by block name.',
+        unnamedArgs: [
+            {
+                name: 'name',
+                description: 'Block name or blocks names, separated by comma.',
+                type: 'string',
+            },
+            {
+                name: 'additional_prompt',
+                description: 'Additional prompt for blocks.',
+                optional: true,
+                type: "string"
+            }
+        ],
+        returns: '',
+        handler: async ({ unnamedArgs: [name, additional_prompt] }) => {
+            if (this_chid === undefined) return '';
+            await runRewriteBlocksCallback({ name }, additional_prompt);
+            return '';
+        }
+    });
+
+    macros.registry.registerMacro(MacroName.CALL_SCRIPT, {
+        category: extName,
+        description: 'Runs script execution generation by block name.',
+        unnamedArgs: [
+            {
+                name: 'name',
+                description: 'Block name or blocks names, separated by comma.',
+                type: 'string',
+            }
+        ],
+        returns: '',
+        handler: async ({ unnamedArgs: [name] }) => {
+            if (this_chid === undefined) return '';
+            await runScriptsExecutionCallback({ name });
+            return '';
         }
     });
 }

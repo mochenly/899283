@@ -356,7 +356,10 @@ Generated blocks are stored within messages and can be edited. Click the three d
 ### Global Macros
 
 	Macros that can be used anywhere in SillyTavern.
--   `{{extblock:block_name}}`: Access the last state of a specific block.
+-   `{{ExtBlocks::block_name}}`: Access the last state of a specific block.
+-   `{{ExtBlocks-Call::blocks_names::[additional_prompt]}}`: Calls block generation by blocks names, separated by comma. Optionally, you can submit an additional prompt, as in `/extblocks-generate` slash command.
+-   `{{ExtBlocks-CallRewrite::blocks_names::[additional_prompt]}}`: Calls message rewrite by blocks names, separated by comma. Optionally, you can submit an additional prompt, as in `/extblocks-rewrite` slash command.
+-   `{{ExtBlocks-CallScript::blocks_names}}`: Runs script execution by blocks names, separated by comma.
 
 ### Local Macros
 
