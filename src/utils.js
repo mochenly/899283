@@ -1,6 +1,6 @@
 import { saveSettingsDebounced, reloadCurrentChat, this_chid } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { getSortableDelay } from '../../../../utils.js';
+import { getSortableDelay, uuidv4 } from '../../../../utils.js';
 import { loadBlocks } from './blocks.js';
 
 import { defaultSet, extStates } from './common.js';
@@ -13,11 +13,29 @@ export async function selfReloadCurrentChat(forceReload = false) {
     }
 }
 
+function createDefaultConnectionProfile() {
+    const profile = {
+        id: uuidv4(),
+        name: '[ExtBlocks] Default',
+        mode: 'cc',
+        api: 'openai',
+        model: 'gpt-5.2'
+    }
+    extension_settings.connectionManager.profiles.push(profile);
+    extension_settings.connectionManager.selectedProfile = profile.id;
+}
+
 export async function refreshSettings() {
     extStates.ExtBlocks_settings = extension_settings.ExtBlocks;
     extStates.current_set = extStates.ExtBlocks_settings.sets[extStates.ExtBlocks_settings.active_set_idx];
     extStates.api_preset = extStates.ExtBlocks_settings.api_presets[extStates.ExtBlocks_settings.active_api_preset];
     extStates.connection_profile = extension_settings.connectionManager.profiles.find(p => p.name === extStates.api_preset.connection_profile) ?? extension_settings.connectionManager.profiles[0];
+
+    if (!extStates.connection_profile) {
+        createDefaultConnectionProfile();
+        extStates.connection_profile = extension_settings.connectionManager.profiles[0];
+        saveSettingsDebounced();
+    }
 }
 
 export function checkAttributesInBlockName(block_name) {
