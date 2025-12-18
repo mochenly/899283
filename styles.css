@@ -207,3 +207,12 @@ input.disable_ExtBlocks {
 .custom-menu-button .custom-cyoa-option-value {
     display: none;
 }
+
+.flex-container > #ExtBlocks-proxy-connection-profile.text_pole {
+    width: auto;
+    flex-grow: 1;
+}
+
+#ExtBlocks-proxy-connection-profile-refresh {
+    margin-left: 0.5em;
+}

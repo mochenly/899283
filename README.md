@@ -49,18 +49,19 @@
 
 The extension is enabled by toggling the `Enable ExtBlocks` checkbox.
 
-## Secondary API Settings
+## API Settings
 
-Configure the secondary API in the `API Settings` section:
+The extension uses its own API settings for block generation, separate from the main chat settings. This allows you to use different models, accounts, or services.
 
-1.  **Select `Chat Completion Source` and a model:**
-    *   **OpenAI**: GPT models and OpenAI-compatible APIs.
-    *   **MistralAI**: Mistral models.
-    *   **Claude**: Claude models.
-    *   **Gemini**: Gemini models.
-    *   **OpenRouter**: Hermes, LLaMa, Phi, and LFM models.
-2.  **Select a proxy preset** for the chosen model (can be ignored for OpenRouter).
-3.  **Optionally, configure** streaming, temperature, system prompt, and prefill.
+The settings have been migrated to use SillyTavern's **Connection Profiles**. A Connection Profile combines the API source (e.g., OpenAI, Claude), model, and proxy into a single profile. You can manage these in the main `API Settings` panel (the wrench icon).
+
+ExtBlocks provides three configurable **API Presets**: `Big`, `Medium`, and `Small`. Each preset can be configured with its own Connection Profile and generation parameters (temperature, streaming, etc.).
+
+**Configuration Steps:**
+1.  **Configure API Presets**: In the `API Settings` section within the ExtBlocks panel, use the dropdown to select and configure each preset (`Big`, `Medium`, `Small`). For each one, choose a **Connection Profile** from your SillyTavern setup and adjust other settings as needed.
+2.  **Assign Presets to Blocks**: Each block configuration now includes a preset selector icon (a battery icon). You can click this icon to cycle through and assign one of the three API presets to that specific block.
+
+This system allows for flexible resource management. For example, you can use a powerful model (the `Big` preset) for complex, creative blocks, and a faster, cheaper model (the `Small` preset) for simple, frequent blocks.
 
 ---
 
@@ -152,14 +153,6 @@ In the edit window, you can set the following for a block:
 	- `Last messages by keyword`: Recent messages up to a specific keyword. Useful for keyword-triggered blocks.
 	- `Previous block`: The content of the previous instance of this block.
 - **Context Order**: Displayed at the bottom right; items can be moved up/down or deleted. Context can be imported and exported. Blocks with the same context and trigger will be generated in a single API call (respecting their period).
-
-	**Final prompt for generated blocks sent to the secondary API:**
-	- Merged context (separated by `\n`)
-	- `\n` x 3
-	- Merged block templates (separated by `\n`)
-	- `\n` x 2
-	- Merged block prompts (separated by `\n`)
-	- System prompt and prefill are sent separately (e.g., for Claude).
 
 	**Example of a correct name-template-prompt combination for a generated block:**
 	**Block Name:**

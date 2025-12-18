@@ -1,5 +1,6 @@
 import { substituteParamsExtended, getRequestHeaders } from '../../../../../script.js';
 import { proxies, chat_completion_sources } from '../../../../openai.js';
+import { extension_settings } from '../../../../extensions.js';
 import { getEventSourceStream } from '../../../../sse-stream.js';
 
 import { extStates, MessageRole, defaultExtPrefix } from './common.js';
@@ -17,26 +18,8 @@ export const reasoning_effort_types = {
 export async function loadApiPreset() {
     await refreshSettings();
     const preset = extStates.api_preset;
-    $(`#ExtBlocks-proxy-ccsource`).val(preset.chat_completion_source);
-    $(`#ExtBlocks-proxy-preset`).val(preset.proxy_preset);
-    
-    const selectElement = $('#ExtBlocks-proxy-ccmodel');
-    const modelValue = preset.model;
-    const otherOptgroupLabel = 'Other';
-
-    if (selectElement.find(`option[value="${modelValue}"]`).length === 0) {
-        let otherOptgroup = selectElement.find(`optgroup[label="${otherOptgroupLabel}"]`);
-
-        if (otherOptgroup.length === 0) {
-            otherOptgroup = $(`<optgroup label="${otherOptgroupLabel}"></optgroup>`);
-            selectElement.append(otherOptgroup);
-        }
-
-        const newOption = new Option(modelValue, modelValue, true, true);
-        otherOptgroup.append(newOption);
-    }
-    $('#ExtBlocks-proxy-ccmodel').val(modelValue).trigger('change');
-    
+    const connection_profile = extStates.connection_profile;
+    $(`#ExtBlocks-proxy-connection-profile`).val(connection_profile.name);
     $('#ExtBlocks-proxy-temperature').val(preset.temperature);
     $('#ExtBlocks-proxy-topp').val(preset.top_p);
     $('#ExtBlocks-proxy-maxtokens').val(preset.max_tokens);
@@ -46,28 +29,54 @@ export async function loadApiPreset() {
     $('#ExtBlocks-enable-jb').prop('checked', preset.confirmation_jb ?? false);
 }
 
-export async function loadAPI() {
-    let proxies_name = proxies.map(obj => obj.name);
-    proxies_name.forEach(function(option) {
-        $('#ExtBlocks-proxy-preset').append($('<option>', {
+export function refreshConnectionProfiles() {
+    const connection_profile_names = extension_settings.connectionManager.profiles.map(obj => obj.name);
+    const select = $('#ExtBlocks-proxy-connection-profile');
+    select.empty();
+    connection_profile_names.forEach(function(option) {
+        select.append($('<option>', {
             value: option,
             text: option
         }));
     });
+    select.val(extStates.api_preset.connection_profile);
+}
 
-    if(!proxies_name.find(p => p === extStates.api_preset.proxy_preset)) {
-        extStates.api_preset.proxy_preset = proxies_name[0];
+export async function loadAPI() {
+    refreshConnectionProfiles();
+    const connection_profile_names = extension_settings.connectionManager.profiles.map(obj => obj.name);
+
+    if(!connection_profile_names.find(p => p === extStates.api_preset.connection_profile)) {
+        extStates.api_preset.connection_profile = connection_profile_names[0];
     }
     
     $('#ExtBlocks-api-preset').val(extStates.ExtBlocks_settings.active_api_preset);
     await loadApiPreset();
 }
 
+function getApiPreset(presetName) {
+    if (!presetName) return extStates.api_preset;
+    const preset = extStates.ExtBlocks_settings.api_presets[presetName];
+    if (preset) return preset;
+    else return extStates.ExtBlocks_settings.api_presets[0];
+}
 
-function getStreamingReply(data) {
-    if (extStates.current_set.chat_completion_source == chat_completion_sources.CLAUDE) {
+function getConnectionProfile(apiPreset) {
+    if (!apiPreset) return extStates.connection_profile;
+    const connection_profile = extension_settings.connectionManager.profiles.find(p => p.name === apiPreset.connection_profile);
+    if (connection_profile) return connection_profile;
+    else return extension_settings.connectionManager.profiles[0];
+}
+
+function getChatCompletionSource(apiName) {
+    if (apiName === 'google') return chat_completion_sources.MAKERSUITE;
+    else return apiName;
+}
+
+function getStreamingReply(data, cc_source) {
+    if (cc_source == chat_completion_sources.CLAUDE) {
         return data?.delta?.text || '';
-    } else if (extStates.current_set.chat_completion_source == chat_completion_sources.MAKERSUITE) {
+    } else if (cc_source == chat_completion_sources.MAKERSUITE) {
         return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
         return data.choices[0]?.delta?.content ?? data.choices[0]?.message?.content ?? data.choices[0]?.text ?? '';
@@ -76,32 +85,34 @@ function getStreamingReply(data) {
 
 
 export async function generateBlocks(messages, apiPresetName) {
-    const preset = apiPresetName ? extStates.ExtBlocks_settings.api_presets[apiPresetName] : extStates.api_preset;
+    const preset = getApiPreset(apiPresetName);
+    const connection_profile = getConnectionProfile(preset);
+    const cc_source = getChatCompletionSource(connection_profile.api);
     const stream = preset.stream ?? false;
     let generate_data = {
         'messages': messages,
-        'model': preset.model,
+        'model': connection_profile.model,
         'temperature': preset.temperature,
         'stream': stream,
-        'chat_completion_source': preset.chat_completion_source,
+        'chat_completion_source': cc_source,
         'top_p': preset.top_p,
         'max_tokens': preset.max_tokens,
         'reasoning_effort': preset.reasoning_effort
     };
-    const proxy_preset = proxies.find(p => p.name === preset.proxy_preset);
-    if (preset.chat_completion_source !== chat_completion_sources.OPENROUTER) {
+    const proxy_preset = proxies.find(p => p.name === connection_profile.proxy);
+    if (proxy_preset && cc_source !== chat_completion_sources.OPENROUTER) {
         generate_data['reverse_proxy'] = proxy_preset.url;
         generate_data['proxy_password'] = proxy_preset.password;
     }
 
-    if (preset.chat_completion_source === chat_completion_sources.MAKERSUITE) {
+    if (cc_source === chat_completion_sources.MAKERSUITE) {
         generate_data['use_sysprompt'] = true;
     }
 
     if (preset.confirmation_jb) {
         messages.push({ role: MessageRole.ASSISTANT, content: "[Please confirm your request]" })
         messages.push({ role: MessageRole.USER, content: "[I confirm]" })
-    } else if (preset.chat_completion_source === chat_completion_sources.CLAUDE) {
+    } else if (cc_source === chat_completion_sources.CLAUDE) {
         generate_data['use_sysprompt'] = true;
         generate_data['assistant_prefill'] = substituteParamsExtended(preset.assistant_prefill);
     } else if (preset.assistant_prefill !== '') {
@@ -136,9 +147,9 @@ export async function generateBlocks(messages, apiPresetName) {
 
                 if (Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed);
+                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, cc_source);
                 } else {
-                    text += getStreamingReply(parsed);
+                    text += getStreamingReply(parsed, cc_source);
                 }
             }
             data = { content: text, swipes: swipes };
@@ -158,10 +169,12 @@ export async function generateBlocks(messages, apiPresetName) {
 }
 
 export function extractMessageFromData(data, preset) {
+    const connection_profile = getConnectionProfile(preset);
+    const cc_source = getChatCompletionSource(connection_profile.api);
     if (preset.stream) {
         return data.content.trim();
     } else {
-        if (preset.chat_completion_source === chat_completion_sources.CLAUDE) {
+        if (cc_source === chat_completion_sources.CLAUDE) {
             return data.content[0].text.trim();
         } else {
             return data.choices[0].message.content.trim();

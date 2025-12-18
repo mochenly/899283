@@ -16,7 +16,7 @@ import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocks
  } from './src/blocks.js';
 import { registerExtensionMacros, unregisterExtensionMacros } from './src/macros.js';
 import { changeSet, importSet, importSetFromObject, refreshSetList } from './src/sets.js';
-import { loadAPI, loadApiPreset, abortGeneration } from './src/api.js';
+import { loadAPI, loadApiPreset, abortGeneration, refreshConnectionProfiles } from './src/api.js';
 import { handleUserTrigger, handleCharTrigger, handleBlocksGeneration,
     runBlockGenerationCallback, appendStringToExtraCallback, purgeExtraCallback, runBlockRegenerationCallback,
     runRewriteBlocksCallback, runScriptsExecutionCallback, exportBlocksCallback, handleMessageTrigger
@@ -52,7 +52,6 @@ function checkSettings() {
                 oldPreset.chat_completion_source = set.chat_completion_source;
                 oldPreset.model = set.model;
                 oldPreset.temperature = set.temperature;
-                oldPreset.system_prompt = set.system_prompt;
                 oldPreset.assistant_prefill = set.assistant_prefill;
                 oldPreset.confirmation_jb = set.confirmation_jb;
             }
@@ -69,11 +68,28 @@ function checkSettings() {
         autohide_display: extBlocksSettings.autohide_display ?? defaultSettings.autohide_display,
         autohide_prompt: extBlocksSettings.autohide_prompt ?? defaultSettings.autohide_prompt,
     });
+    let migration_done = false;
     for (const presetName in extBlocksSettings.api_presets) {
         const preset = extBlocksSettings.api_presets[presetName];
+        if ('chat_completion_source' in preset || 'proxy_preset' in preset || 'model' in preset) {
+            const defaultProfile = extension_settings.connectionManager.profiles[0];
+            if (defaultProfile) {
+                preset.connection_profile = defaultProfile.name;
+                migration_done = true;
+            } else {
+                toastr.error(`[ExtBlocks] Could not migrate API preset "${presetName}". No Connection Profiles found.`);
+            }
+            delete preset.chat_completion_source;
+            delete preset.proxy_preset;
+            delete preset.model;
+        }
+
         preset.top_p = preset.top_p ?? defaultApiPreset.top_p;
         preset.max_tokens = preset.max_tokens ?? defaultApiPreset.max_tokens;
         preset.reasoning_effort = preset.reasoning_effort ?? defaultApiPreset.reasoning_effort;
+    }
+    if (migration_done) {
+        toastr.warning(`[ExtBlocks] API presets have been migrated to use Connection Profiles. Please review your settings.`);
     }
     saveSettingsDebounced();
 }
@@ -230,31 +246,23 @@ async function setupListeners() {
     $('#ExtBlocks-proxy-toggle').off('click').on('click', function () {
         $('#ExtBlocks-proxy').slideToggle(200, 'swing');
     });
-    $('#ExtBlocks-proxy-ccsource').off('click').on('change', function () {
-        const value = $('#ExtBlocks-proxy-ccsource').val();
-        extStates.api_preset.chat_completion_source = value;
-        saveSettingsDebounced();
-    });
     $('#ExtBlocks-proxy-stream').off('click').on('change', function () {
         const value = $('#ExtBlocks-proxy-stream').prop('checked');
         extStates.api_preset.stream = value;
         saveSettingsDebounced();
     });
-    $('#ExtBlocks-proxy-preset').off('click').on('change', function () {
-        const value = $('#ExtBlocks-proxy-preset').val();
-        extStates.api_preset.proxy_preset = value;
+
+    $('#ExtBlocks-proxy-connection-profile').off('click').on('change', function () {
+        const value = $('#ExtBlocks-proxy-connection-profile').val();
+        extStates.api_preset.connection_profile = value;
         saveSettingsDebounced();
     });
 
-    $("#ExtBlocks-proxy-ccmodel").select2({
-        tags: true
+    $('#ExtBlocks-proxy-connection-profile-refresh').on('click', function() {
+        refreshConnectionProfiles();
+        toastr.success('Connection profiles list refreshed!');
     });
 
-    $('#ExtBlocks-proxy-ccmodel').off('click').on('change', function () {
-        const value = $('#ExtBlocks-proxy-ccmodel').val();
-        extStates.api_preset.model = value;
-        saveSettingsDebounced();
-    });
     $('#ExtBlocks-proxy-temperature').off('click').on('input', function () {
         const value = $('#ExtBlocks-proxy-temperature').val();
         extStates.api_preset.temperature = parseFloat(String(value));

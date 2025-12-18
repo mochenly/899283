@@ -17,6 +17,7 @@ export async function refreshSettings() {
     extStates.ExtBlocks_settings = extension_settings.ExtBlocks;
     extStates.current_set = extStates.ExtBlocks_settings.sets[extStates.ExtBlocks_settings.active_set_idx];
     extStates.api_preset = extStates.ExtBlocks_settings.api_presets[extStates.ExtBlocks_settings.active_api_preset];
+    extStates.connection_profile = extension_settings.connectionManager.profiles.find(p => p.name === extStates.api_preset.connection_profile) ?? extension_settings.connectionManager.profiles[0];
 }
 
 export function checkAttributesInBlockName(block_name) {
