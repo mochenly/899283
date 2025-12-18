@@ -36,7 +36,6 @@ export const defaultSettings = {
 
 export const extName = 'ExtBlocks'
 export const defaultExtPrefix = '[ExtBlocks]';
-export const defaultExtMacrosPrefix = 'extblock:';
 export const worldInfoMacrosNames = ['{{wiBefore}}', '{{wiAfter}}', '{{wiExamples}}', '{{wiDepth}}', '{{wiAll}}'];
 export const mainPromptMacros = '{{mainPrompt}}';
 

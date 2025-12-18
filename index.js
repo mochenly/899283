@@ -14,7 +14,7 @@ import { createRegexForBlocks, purgeAllBlocksDisplayText, importBlock, getBlocks
     purgeBlocksExtra, addBlocksToExtra, loadBlocks, updateBlocksDisplay, checkBlocksInFirstMessage,
     firstSwipeBlockExtra, swipeBlockExtra, getAllEnabledBlocks
  } from './src/blocks.js';
-import { populateBlockMacrosBuffer, purgeAllBlocksMacros } from './src/macros.js';
+import { registerExtensionMacros, unregisterExtensionMacros } from './src/macros.js';
 import { changeSet, importSet, importSetFromObject, refreshSetList } from './src/sets.js';
 import { loadAPI, loadApiPreset, abortGeneration } from './src/api.js';
 import { handleUserTrigger, handleCharTrigger, handleBlocksGeneration,
@@ -102,12 +102,10 @@ async function setupListeners() {
         extension_settings.ExtBlocks.extblocks_is_enabled = value;
         if (value) {
             await createRegexForBlocks(true);
-            if (this_chid !== undefined) {
-                populateBlockMacrosBuffer();
-            }
+            registerExtensionMacros();
         } else {
+            unregisterExtensionMacros();
             if (this_chid !== undefined) {
-                purgeAllBlocksMacros();
                 await purgeAllBlocksDisplayText();
                 await selfReloadCurrentChat(true);
             }
@@ -414,7 +412,6 @@ jQuery(async () => {
         } else {
             extStates.is_chat_modified = false;
             await loadBlocks();
-            populateBlockMacrosBuffer();
             extStates.cachedPauseBlocks = null;
             extStates.pauseCounter = 0;
         }
@@ -547,9 +544,7 @@ jQuery(async () => {
             $('#extblocks_is_enabled').prop('checked', extension_settings.ExtBlocks.extblocks_is_enabled);
             await createRegexForBlocks(false, true);
             reloadFlag.value = true;
-            if (this_chid !== undefined) {
-                populateBlockMacrosBuffer();
-            }
+            registerExtensionMacros();
             saveSettingsDebounced();
         }
         if (extension_settings.ExtBlocks.active_set === presetName) return;
@@ -563,8 +558,8 @@ jQuery(async () => {
     eventSource.on("/fatpresets/disable/extblocks", async () => {
         extension_settings.ExtBlocks.extblocks_is_enabled = false;
         $('#extblocks_is_enabled').prop('checked', extension_settings.ExtBlocks.extblocks_is_enabled);
+        unregisterExtensionMacros();
         if (this_chid !== undefined) {
-            purgeAllBlocksMacros();
             await purgeAllBlocksDisplayText();
         }
         saveSettingsDebounced();
@@ -686,6 +681,8 @@ jQuery(async () => {
         returns: 'void',
         helpString: 'Aborts the current block generation.',
     }));
+
+    if (extension_settings.ExtBlocks.extblocks_is_enabled) registerExtensionMacros();
 
     console.log(`${defaultExtPrefix} extension loaded`);
 });

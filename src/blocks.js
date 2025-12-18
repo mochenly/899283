@@ -8,7 +8,7 @@ import { defaultExtPrefix, extStates, templates_path, BlockType, ContextType, ex
 import { selfReloadCurrentChat, getRegexForBlock, getBlockEncloseRegex, updateOrInsert, refreshSettings,
     getBlockFromMessageWithRegex, getBlockFromMessage
  } from './utils.js';
-import { insertBlockMacros, deleteBlockMacros, checkAllMacros } from './macros.js';
+import { checkAllMacros } from './macros.js';
 import { openEditor, openAccumulationEditor, openScriptEditor } from './editors.js';
 
 
@@ -248,9 +248,6 @@ export async function importBlock(file, isScoped) {
 
         saveSettingsDebounced();
         await loadBlocks();
-        if (this_chid !== undefined && block.block_type !== BlockType.REWRITE && block.block_type !== BlockType.SCRIPT) {
-            insertBlockMacros(block);
-        }
         
         toastr.success(`ExtBlocks block "${block.name}" imported.`);
     } catch (error) {
@@ -299,9 +296,6 @@ export async function saveBlock(block, index, isScoped) {
 
     saveSettingsDebounced();
     await loadBlocks();
-    if (this_chid !== undefined && block.block_type !== BlockType.REWRITE && block.block_type !== BlockType.SCRIPT) {
-        insertBlockMacros(block);
-    }
 }
 
 export async function deleteBlock({ id, isScoped }) {
@@ -319,9 +313,6 @@ export async function deleteBlock({ id, isScoped }) {
 
         saveSettingsDebounced();
         await loadBlocks();
-        if (this_chid !== undefined && block.block_type !== BlockType.REWRITE && block.block_type !== BlockType.SCRIPT) {
-            deleteBlockMacros(block_name);
-        }
     }
 }
 

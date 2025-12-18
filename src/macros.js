@@ -1,41 +1,46 @@
 import { this_chid, chat } from '../../../../../script.js';
 import { oai_settings, setupChatCompletionPromptManager } from '../../../../openai.js';
-import { MacrosParser } from '../../../../macros.js';
+import { power_user } from '../../../../power-user.js';
+import { macros } from '../../../../macros/macro-system.js';
 import { checkWorldInfo } from '../../../../world-info.js';
 
-import { mainPromptMacros, worldInfoMacrosNames, defaultExtMacrosPrefix } from './common.js';
+import { mainPromptMacros, worldInfoMacrosNames, extName } from './common.js';
 import { getAllEnabledBlocks, getPreviousBlockContextUnconditional } from './blocks.js';
 
-
-export function insertBlockMacros(block) {
-    const getBlockContext = () => getPreviousBlockContextUnconditional(block, chat.length - 1, true);
-    const blockKey = `${defaultExtMacrosPrefix}${block.name}`;
-    MacrosParser.registerMacro(blockKey, getBlockContext);
+const MacroName = {
+    MAIN: `${extName}`,
+    GET_BLOCK_BY_NAME: `${extName}-GetBlockByName`,
 }
 
-export function deleteBlockMacros(block_name) {
-    const blockKey = `${defaultExtMacrosPrefix}${block_name}`;
-    MacrosParser.unregisterMacro(blockKey);
-}
+export function registerExtensionMacros() {
+    power_user.experimental_macro_engine = true;
 
-export function purgeAllBlocksMacros() {
-    const dummyEnv = {};
-    MacrosParser.populateEnv(dummyEnv);
-    const macrosKeys = Object.keys(dummyEnv);
-    const extBlocksKeys = macrosKeys.filter(key => key.includes(defaultExtMacrosPrefix));
-    extBlocksKeys.forEach(key => {
-        deleteBlockMacros(key.split(':')[1]);
-    });
-}
+    macros.registry.registerMacro(MacroName.MAIN, {
+        category: extName,
+        description: 'Returns the content of a block by its name.',
+        unnamedArgs: [
+            {
+                name: 'name',
+                description: 'Block name.',
+                type: 'string',
+            }
+        ],
+        aliases: [
+            { alias: MacroName.GET_BLOCK_BY_NAME, visible: true }
+        ],
+        handler: ({ unnamedArgs: [name] }) => {
+            if (this_chid === undefined) return '';
+            const allBlocks = getAllEnabledBlocks();
+            const block = allBlocks.filter(b => b.name === name)?.[0];
+            if (!block) return '';
+            else return getPreviousBlockContextUnconditional(block, chat.length - 1, true);
 
-export function populateBlockMacrosBuffer() {
-    purgeAllBlocksMacros();
-    const allBlocks = getAllEnabledBlocks();
-    allBlocks.forEach((block) => {
-        if (block.block_type !== 'rewrite') {
-            insertBlockMacros(block);
         }
     });
+}
+
+export function unregisterExtensionMacros() {
+    macros.registry.unregisterMacro(MacroName.MAIN);
 }
 
 export async function checkWorldInfoMacros(prompt) {

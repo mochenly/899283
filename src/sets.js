@@ -4,7 +4,6 @@ import { getFileText } from '../../../../utils.js';
 
 import { extStates } from './common.js';
 import { refreshSettings, updateOrInsert } from './utils.js';
-import { populateBlockMacrosBuffer } from './macros.js';
 import { loadAPI } from './api.js';
 import { loadBlocks } from './blocks.js';
 
@@ -30,9 +29,6 @@ export async function changeSet(idx) {
     saveSettingsDebounced();
     await loadAPI();
     await loadBlocks();
-    if (this_chid !== undefined) {
-        populateBlockMacrosBuffer();
-    }
 }
 
 export function importSetFromObject(setObject) {
