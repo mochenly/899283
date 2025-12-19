@@ -137,7 +137,7 @@ export async function handleGeneration(generatedBlocks, messageId, allBlocks, ad
 
         const generationTask = async () => {
             const blocks = await generateBlockContent(blocksInGroup, messageId, allBlocks, additionalMacro);
-            eventSource.emit('/extblocks/generated', blocks);
+            eventSource.emit('/extblocks/generated', { blocks, messageId });
 
             if (!is_separate) {
                 await addBlocksToExtra(messageId, blocks);
