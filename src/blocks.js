@@ -94,37 +94,38 @@ export async function updateBlocksDisplay(messageId) {
 }
 
 export async function addBlocksToExtra(messageId, blocksStr) {
-    if (chat[messageId].extra === undefined) {
-        chat[messageId].extra = {};
+    let effectiveMessageId = Math.max(Math.min(messageId, chat.length - 1), 0);
+    if (chat[effectiveMessageId].extra === undefined) {
+        chat[effectiveMessageId].extra = {};
     }
 
-    if (chat[messageId].extra.extblocks === undefined || chat[messageId].extra.extblocks === '') {
-        chat[messageId].extra.extblocks = blocksStr;
+    if (chat[effectiveMessageId].extra.extblocks === undefined || chat[effectiveMessageId].extra.extblocks === '') {
+        chat[effectiveMessageId].extra.extblocks = blocksStr;
 
     } else {
-        chat[messageId].extra.extblocks += `\n${blocksStr}`;
+        chat[effectiveMessageId].extra.extblocks += `\n${blocksStr}`;
     }
 
-    if (chat[messageId].swipe_id) {
-        const current_swipe_id = chat[messageId].swipe_id;
+    if (chat[effectiveMessageId].swipe_id) {
+        const current_swipe_id = chat[effectiveMessageId].swipe_id;
 
-        if (chat[messageId].swipe_info[current_swipe_id] === undefined) {
-            chat[messageId].swipe_info[current_swipe_id] = {};
+        if (chat[effectiveMessageId].swipe_info[current_swipe_id] === undefined) {
+            chat[effectiveMessageId].swipe_info[current_swipe_id] = {};
         }
 
-        if (chat[messageId].swipe_info[current_swipe_id].extra === undefined) {
-            chat[messageId].swipe_info[current_swipe_id].extra = {};
+        if (chat[effectiveMessageId].swipe_info[current_swipe_id].extra === undefined) {
+            chat[effectiveMessageId].swipe_info[current_swipe_id].extra = {};
         }
     
-        if (chat[messageId].swipe_info[current_swipe_id].extra.extblocks === undefined || chat[messageId].swipe_info[current_swipe_id].extra.extblocks === '') {
-            chat[messageId].swipe_info[current_swipe_id].extra.extblocks = blocksStr;
+        if (chat[effectiveMessageId].swipe_info[current_swipe_id].extra.extblocks === undefined || chat[effectiveMessageId].swipe_info[current_swipe_id].extra.extblocks === '') {
+            chat[effectiveMessageId].swipe_info[current_swipe_id].extra.extblocks = blocksStr;
     
         } else {
-            chat[messageId].swipe_info[current_swipe_id].extra.extblocks += `\n${blocksStr}`;
+            chat[effectiveMessageId].swipe_info[current_swipe_id].extra.extblocks += `\n${blocksStr}`;
         }
     }
 
-    await updateBlocksDisplay(messageId);
+    await updateBlocksDisplay(effectiveMessageId);
 }
 
 export function getBlocksFromExtra(messageId) {
@@ -509,12 +510,12 @@ export async function loadBlocks() {
 }
 
 export function groupBlocksByContext(blocks) {
-    const contextToString = (context) => context.map(item => item.name).join('_');
+    const contextToString = (block) => `${block.background ? 'bg_' : ''}${block.context.map(item => item.name).join('_')}`;
 
     const groupedBlocks = {};
 
     blocks.forEach(block => {
-        const contextStr = contextToString(block.context);
+        const contextStr = contextToString(block);
         if (!groupedBlocks[contextStr]) {
             groupedBlocks[contextStr] = [];
         }

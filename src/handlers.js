@@ -122,32 +122,61 @@ export async function handleGeneration(generatedBlocks, messageId, allBlocks, ad
 
     if (Object.keys(groupedBlocks).length === 0) return blocksList;
 
-    toastr.info(`${defaultExtPrefix} Generating, please wait...`);
+    const hasForegroundBlocks = Object.values(groupedBlocks).some(group => !(group[0].background ?? false));
+    if (hasForegroundBlocks) {
+        toastr.info(`${defaultExtPrefix} Generating, please wait...`);
+    }
+
     for (const context in groupedBlocks) {
         const blocksInGroup = groupedBlocks[context];
-        const blocks = await generateBlockContent(blocksInGroup, messageId, allBlocks, additionalMacro);
+        const isBackground = blocksInGroup[0].background ?? false;
 
-        blocksList.push(blocks);
-        eventSource.emit('/extblocks/generated', blocks);
+        if (isBackground) {
+            toastr.info(`${defaultExtPrefix} Starting background generation for "${blocksInGroup.map(b => b.name).join(', ')}"...`);
+        }
 
-        if (!is_separate) {
-            await addBlocksToExtra(messageId, blocks);
+        const generationTask = async () => {
+            const blocks = await generateBlockContent(blocksInGroup, messageId, allBlocks, additionalMacro);
+            eventSource.emit('/extblocks/generated', blocks);
+
+            if (!is_separate) {
+                await addBlocksToExtra(messageId, blocks);
+            } else {
+                const message = {
+                    name: 'System', is_user: false, is_system: true, mes: blocks, force_avatar: system_avatar,
+                    extra: {
+                        type: system_message_types.NARRATOR, bias: null, gen_id: Date.now(),
+                        api: 'manual', model: 'slash command',
+                    },
+                };
+                chat.push(message);
+                const pushedIndex = chat.length - 1;
+                await eventSource.emit(event_types.MESSAGE_SENT, pushedIndex);
+                addOneMessage(message);
+                await eventSource.emit(event_types.USER_MESSAGE_RENDERED, pushedIndex);
+                await saveChatConditional();
+            }
+
+            if (isBackground) {
+                toastr.success(`${defaultExtPrefix} Background generation for "${blocksInGroup.map(b => b.name).join(', ')}" is done!`);
+            }
+            return blocks;
+        };
+
+        if (isBackground) {
+            generationTask().catch(err => {
+                console.error(`${defaultExtPrefix} Background generation failed:`, err);
+                toastr.error(`${defaultExtPrefix} Background generation failed for "${blocksInGroup.map(b => b.name).join(', ')}".`);
+            });
         } else {
-            const message = {
-                name: 'System', is_user: false, is_system: true, mes: blocks, force_avatar: system_avatar,
-                extra: {
-                    type: system_message_types.NARRATOR, bias: null, gen_id: Date.now(),
-                    api: 'manual', model: 'slash command',
-                },
-            };
-            chat.push(message);
-            await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
-            addOneMessage(message);
-            await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
-            await saveChatConditional();
+            const blocks = await generationTask();
+            blocksList.push(blocks);
         }
     }
-    toastr.success(`${defaultExtPrefix} Generating is done!`);
+
+    if (hasForegroundBlocks) {
+        toastr.success(`${defaultExtPrefix} Generating is done!`);
+    }
     return blocksList;
 }
 

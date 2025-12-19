@@ -298,6 +298,7 @@ export async function openEditor(existingId, isScoped) {
             editorHtml.find('input[name="hide_display"]').prop('checked', existingBlock.hide_display ?? false);
             editorHtml.find('input[name="inject_block"]').prop('checked', existingBlock.inject_block ?? false);
             editorHtml.find('input[name="disabled"]').prop('checked', existingBlock.disabled ?? false);
+            editorHtml.find('input[name="background"]').prop('checked', existingBlock.background ?? false);
 
             editorHtml.find(`select[name="ExtBlocks-editor-injection-role"]`).val(existingBlock.injection_role ?? 0);
             editorHtml.find(`select[name="ExtBlocks-editor-injection-position"]`).val(existingBlock.injection_position ?? 0);
@@ -457,6 +458,7 @@ export async function openEditor(existingId, isScoped) {
             injection_position: parseInt(String(editorHtml.find(`select[name="ExtBlocks-editor-injection-position"]`).val())),
             injection_depth: parseInt(String(editorHtml.find('input[name="injection_depth"]').val() || 4)),
             generation_order: editorHtml.find(`select[name="ExtBlocks-editor-generation-order"]`).val() || 'before',
+            background: editorHtml.find('input[name="background"]').prop('checked'),
             context: contextItems,
             api_preset: blockApiPreset
         };
