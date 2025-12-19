@@ -1,6 +1,6 @@
 # ExtBlocks (External Blocks)
 
-!!! note "For SillyTavern 1.12.0+"
+"For SillyTavern 1.14.0+"
 	This extension allows for the external generation of content blocks.
 
 - **Repository**: `https://gitgud.io/Monblant/extblocks`
@@ -87,7 +87,8 @@ In the edit window, you can set the following for a block:
 - **State**:
 	- `Disabled`: Whether the block (and its generation) is disabled.
 	- `Hide From Display`: Whether to hide the block from the user's view.
-	- `Inject block`: Whether to insert the block into the context for the main generation.
+	- `Inject Block`: Whether to insert the block into the context for the main generation.
+  - `Background Generation`: Whether the block should be generated at background.
 - **Injection Settings**:
 	- `Injection Role`: The role for injection (system, assistant, or user).
 	- `Injection Position`:
