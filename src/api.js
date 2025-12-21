@@ -1,4 +1,4 @@
-import { substituteParamsExtended, getRequestHeaders } from '../../../../../script.js';
+import { substituteParams, getRequestHeaders } from '../../../../../script.js';
 import { proxies, chat_completion_sources } from '../../../../openai.js';
 import { extension_settings } from '../../../../extensions.js';
 import { getEventSourceStream } from '../../../../sse-stream.js';
@@ -114,7 +114,7 @@ export async function generateBlocks(messages, apiPresetName) {
         messages.push({ role: MessageRole.USER, content: "[I confirm]" })
     } else if (cc_source === chat_completion_sources.CLAUDE) {
         generate_data['use_sysprompt'] = true;
-        generate_data['assistant_prefill'] = substituteParamsExtended(preset.assistant_prefill);
+        generate_data['assistant_prefill'] = substituteParams(preset.assistant_prefill);
     } else if (preset.assistant_prefill !== '') {
         messages.push({ role: MessageRole.ASSISTANT, content: preset.assistant_prefill })
     }

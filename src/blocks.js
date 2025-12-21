@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, substituteParamsExtended, setExtensionPrompt, callPopup,
+import { saveSettingsDebounced, substituteParams, setExtensionPrompt, callPopup,
     this_chid, characters, chat, updateMessageBlock, saveChatConditional } from '../../../../../script.js';
 import { extension_settings, writeExtensionField, renderExtensionTemplateAsync } from '../../../../extensions.js';
 import { getRegexedString } from '../../../../extensions/regex/engine.js'
@@ -319,7 +319,7 @@ export async function deleteBlock({ id, isScoped }) {
 
 function getContextItemContent(context_item, messageId, allBlocks, additionalMacro) {
     if (context_item.type === ContextType.TEXT) {
-        return substituteParamsExtended(context_item.text, additionalMacro);
+        return substituteParams(context_item.text, { dynamicMacros: additionalMacro });
     } else if (context_item.type === ContextType.LAST_MESSAGES || context_item.type === ContextType.LAST_MESSAGES_KEYWORD) {
         return getLastMessagesContext(context_item, messageId);
     } else if (context_item.type === ContextType.PREVIOUS_BLOCK) {
@@ -365,8 +365,8 @@ export function getSingleBlockFullPrompt(block) {
     }
     const messageId = chat.length - 1;
     const allBlocks = getAllEnabledBlocks();
-    const blockTemplate = `Block(s) template:\n${substituteParamsExtended(block.template)}`;
-    const blockPrompt = `Block(s) prompt:\n${substituteParamsExtended(block.prompt)}`;
+    const blockTemplate = `Block(s) template:\n${substituteParams(block.template)}`;
+    const blockPrompt = `Block(s) prompt:\n${substituteParams(block.prompt)}`;
     const blockContext = getBlockCombinedContext(block, messageId, allBlocks);
 
     return `${blockContext}\n\n\n${blockTemplate}\n\n${blockPrompt}`;
@@ -588,9 +588,9 @@ export function getLastMessagesContext(item, messageId) {
     const combinedLastMessages = lastMessages.map((message, index) => {
         const is_user_message = message.is_user;
         let prefix = is_user_message ? item.user_prefix : item.char_prefix;
-        prefix = substituteParamsExtended(prefix);
+        prefix = substituteParams(prefix);
         let suffix = is_user_message ? item.user_suffix : item.char_suffix;
-        suffix = substituteParamsExtended(suffix);
+        suffix = substituteParams(suffix);
         const placement = is_user_message ? 1 : 2;
         const depth = messages_count - index - 1;
         return `${prefix}${getRegexedString(message.mes.trim(), placement, {depth: depth, isPrompt: true})}${suffix}`;

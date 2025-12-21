@@ -1,4 +1,4 @@
-import { substituteParamsExtended, this_chid, eventSource, event_types, chat,
+import { substituteParams, this_chid, eventSource, event_types, chat,
     addOneMessage, system_message_types, system_avatar, saveChatConditional } from '../../../../../script.js';
 
 import { defaultExtPrefix, extStates, BlockType, MessageRole } from './common.js';
@@ -29,8 +29,8 @@ export function categorizeBlocks(triggeredBlocks) {
 
 export async function generateRewrite(rewriteBlock, messageId, allBlocks, additionalMacro = {}) {
     const context = getBlockCombinedContext(rewriteBlock, messageId, allBlocks, additionalMacro);
-    const template = `Block(s) template:\n${substituteParamsExtended(rewriteBlock.template, additionalMacro)}`;
-    const prompt = `Block(s) prompt:\n${substituteParamsExtended(rewriteBlock.prompt, additionalMacro)}`;
+    const template = `Block(s) template:\n${substituteParams(rewriteBlock.template, { dynamicMacros: additionalMacro })}`;
+    const prompt = `Block(s) prompt:\n${substituteParams(rewriteBlock.prompt, { dynamicMacros: additionalMacro })}`;
     let fullPrompt = `${context}\n\n\n${template}\n\n${prompt}`;
     fullPrompt = await checkAllMacros(fullPrompt);
 
@@ -86,8 +86,8 @@ export async function handleScriptBlocks(scriptBlocks, execution_order) {
 export async function generateBlockContent(blocksInGroup, messageId, allBlocks, additionalMacro = {}) {
     const apiPresetName = blocksInGroup[0].api_preset;
     let combinedContext = [];
-    let combinedTemplate = `Block(s) template:\n${blocksInGroup.map(block => substituteParamsExtended(block.template, additionalMacro)).join('\n')}`;
-    let combinedPrompt = `Block(s) prompt:\n${blocksInGroup.map(block => substituteParamsExtended(block.prompt, additionalMacro)).join('\n')}`;
+    let combinedTemplate = `Block(s) template:\n${blocksInGroup.map(block => substituteParams(block.template, { dynamicMacros: additionalMacro })).join('\n')}`;
+    let combinedPrompt = `Block(s) prompt:\n${blocksInGroup.map(block => substituteParams(block.prompt, { dynamicMacros: additionalMacro })).join('\n')}`;
 
     if (blocksInGroup.length > 0) {
         combinedContext = getBlockCombinedContext(blocksInGroup[0], messageId, allBlocks, additionalMacro);
@@ -316,7 +316,7 @@ export async function runBlockGenerationCallback(args, additional_prompt) {
         const messageId = chat.length - 1;
         let additionalMacro = {};
         if (additional_prompt) {
-            additionalMacro = { additionalPrompt: substituteParamsExtended(additional_prompt) }
+            additionalMacro = { additionalPrompt: substituteParams(additional_prompt) }
         }
         let is_separate = false;
         if (args.is_separate) {
@@ -342,7 +342,7 @@ export async function runRewriteBlocksCallback(args, additional_prompt) {
         const messageId = chat.length - 1;
         let additionalMacro = {};
         if (additional_prompt) {
-            additionalMacro = { additionalPrompt: substituteParamsExtended(additional_prompt) }
+            additionalMacro = { additionalPrompt: substituteParams(additional_prompt) }
         }
         let is_separate = false;
         await handleBlocksGeneration(messageId, false, allBlocks, blocks, additionalMacro, is_separate);

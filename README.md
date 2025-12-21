@@ -1,6 +1,7 @@
 # ExtBlocks (External Blocks)
 
-"For SillyTavern 1.14.0+"
+  For SillyTavern 1.14.0+ (staging)
+
 	This extension allows for the external generation of content blocks.
 
 - **Repository**: `https://gitgud.io/Monblant/extblocks`
