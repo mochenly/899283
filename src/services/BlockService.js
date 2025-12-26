@@ -201,7 +201,14 @@ export const BlockService = {
         if (message.swipe_id) {
             const swipeId = message.swipe_id;
             if (!message.swipe_info) message.swipe_info = {};
-            if (!message.swipe_info[swipeId]) message.swipe_info[swipeId] = {};
+            if (!message.swipe_info[swipeId]) {
+                message.swipe_info[swipeId] = {
+                    send_date: message.send_date,
+                    gen_started: message.gen_started,
+                    gen_finished: message.gen_finished,
+                    extra: {},
+                };
+            };
             if (!message.swipe_info[swipeId].extra) message.swipe_info[swipeId].extra = {};
             
             const swipeExtra = message.swipe_info[swipeId].extra;
@@ -319,7 +326,14 @@ export const BlockService = {
         if (!message || !message.extra) return;
 
         if (!message.swipe_info) message.swipe_info = {};
-        if (!message.swipe_info[0]) message.swipe_info[0] = {};
+        if (!message.swipe_info[0]) {
+            message.swipe_info[0] = {
+                send_date: message.send_date,
+                gen_started: message.gen_started,
+                gen_finished: message.gen_finished,
+                extra: {},
+            };
+        };
         if (!message.swipe_info[0].extra) message.swipe_info[0].extra = {};
 
         message.swipe_info[0].extra.extblocks = message.extra.extblocks || '';
