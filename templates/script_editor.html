@@ -1,7 +1,7 @@
 <div id="ExtBlocks-scripteditor-template">
     <div class="ExtBlocks-scripteditor">
         <h3 class="ExtBlocks-scripteditor-header flex-container justifyCenter alignItemsBaseline">
-            <strong data-i18n="Block Editor">Script Block Editor</strong>
+            <strong>Script Block Editor</strong>
         </h3>
 
         <hr>
@@ -9,12 +9,12 @@
         <div class="ExtBlocks-scripteditor-body flex-container flexFlowRow">
             <div class="ExtBlocks-scripteditor-settings flex-container flexFlowColumn">
                 <h4 class="flex-container justifyCenter alignItemsBaseline">
-                    <strong data-i18n="Script Settings">Script Settings</strong>
+                    <strong>Script Settings</strong>
                 </h4>
                 <div class="flex-container flexFlowColumn">
                     <div class="flex1">
                         <label for="ExtBlocks-scripteditor-block-name" class="title_restorable">
-                            <small data-i18n="Block Name">Block Name</small>
+                            <small>Block Name</small>
                         </label>
                         <div>
                             <input
@@ -25,8 +25,8 @@
                     </div>
 
                     <div class="flex1 flex-container flexNoGap">
-                        <small data-i18n="[title]ExtBlocks-scripteditor-script-type-desc" title="">
-                            <span data-i18n="Script Type">Script Type</span>
+                        <small title="">
+                            <span>Script Type</span>
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </small>
                         <select name="ExtBlocks-scripteditor-script-type" class="text_pole">
@@ -37,14 +37,15 @@
 
                     <div class="flex1">
                         <label for="ExtBlocks-scripteditor-script" class="title_restorable">
-                            <small data-i18n="Script">Script</small>
+                            <small>Script</small>
                         </label>
-                        <div>
+                        <div class="ExtBlocks-editor-message-holder">
+                            <pre class="ExtBlocks-editor-message-syntax"><code class="ExtBlocks-editor-message-syntax-inner hljs"></code></pre>
                             <textarea
                                 class="ExtBlocks-scripteditor-script text_pole wide100p textarea_compact"
-                                data-i18n="[placeholder]ExtBlocks-scripteditor-script-placeholder"
                                 placeholder="Placeholder for the script."
                                 rows="30"
+                                spellcheck="false"
                             ></textarea>
                         </div>
                     </div>
@@ -55,36 +56,36 @@
 
             <div class="ExtBlocks-scripteditor-states flex-container flexFlowColumn">
                 <h4 class="flex-container justifyCenter alignItemsBaseline">
-                    <strong data-i18n="Script States">Script States</strong>
+                    <strong>Script States</strong>
                 </h4>
 
                 <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
-                    <small data-i18n="ExtBlocks-scripteditor-triggers">Triggers</small>
+                    <small>Triggers</small>
                     <div title="Messages sent by the user and swipes.">
                         <label class="checkbox flex-container">
                             <input type="checkbox" name="user_message">
-                            <span data-i18n="User Message">User Message</span>
+                            <span>User Message</span>
                         </label>
                     </div>
 
                     <div title="Messages received from the Generation API.">
                         <label class="checkbox flex-container">
                             <input type="checkbox" name="char_message">
-                            <span data-i18n="Char Message">Char Message</span>
+                            <span>Char Message</span>
                         </label>
                     </div>
 
                     <div title="Stops generation when a keyword is found.">
                         <label class="checkbox flex-container">
                             <input type="checkbox" name="generation_pause">
-                            <span data-i18n="Generation Pause">Generation Pause</span>
+                            <span>Generation Pause</span>
                         </label>
                     </div>
  
                     <div class="flex-container wide100p marginTop5">
                         <div class="flex1 flex-container flexNoGap">
-                            <small data-i18n="[title]ExtBlocks-scripteditor-trigger-periodicity-desc" title="">
-                                <span data-i18n="Trigger periodicity">Trigger periodicity</span>
+                            <small title="">
+                                <span>Trigger periodicity</span>
                                 <span class="fa-solid fa-circle-question note-link-span"></span>
                             </small>
                             <select name="ExtBlocks-scripteditor-trigger-periodicity" class="text_pole">
@@ -96,25 +97,25 @@
 
                     <div class="ExtBlocks-scripteditor-period-wrapper flex-container wide100p marginTop5">
                         <div class="flex1 flex-container flexNoGap">
-                            <small data-i18n="[title]ExtBlocks-scripteditor-period-desc" title="">
-                                <span data-i18n="Period">Period</span>
+                            <small title="">
+                                <span>Period</span>
                                 <span class="fa-solid fa-circle-question note-link-span"></span>
                             </small>
-                            <input name="period" class="text_pole textarea_compact" type="number" min="0" max="999" data-i18n="[placeholder]ExtBlocks-scripteditor-period-placeholder" placeholder="2" />
+                            <input name="period" class="text_pole textarea_compact" type="number" min="0" max="999" placeholder="2" />
                         </div>
                     </div>
 
                     <div class="ExtBlocks-scripteditor-keyword-wrapper flex-container wide100p marginTop5">
                         <div class="flex1 flex-container flexNoGap">
                             <div class="flex-container" style="align-items: baseline; justify-content: space-between;">
-                                <small data-i18n="[title]ExtBlocks-scripteditor-keyword-desc" title="">
-                                    <span data-i18n="Keyword">Keyword</span>
+                                <small title="">
+                                    <span>Keyword</span>
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
                                 </small>
                                 <div title="The keyword will be treated as a regular expression.">
                                     <label class="checkbox flex-container">
                                         <input type="checkbox" name="keyword_is_regex" />
-                                        <span data-i18n="Regex">Regex</span>
+                                        <span>Regex</span>
                                     </label>
                                 </div>
                             </div>
@@ -125,17 +126,17 @@
                         </div>
                     </div>
 
-                    <small data-i18n="ExtBlocks-scripteditor-state">State</small>
+                    <small>State</small>
 
                     <label class="checkbox flex-container">
                         <input type="checkbox" name="disabled" />
-                        <span data-i18n="Disabled">Disabled</span>
+                        <span>Disabled</span>
                     </label>
 
                     <div class="flex-container wide100p marginTop5" id="ExtBlocks-editor-execution-order-wrapper">
                         <div class="flex1 flex-container flexNoGap">
-                            <small data-i18n="[title]ExtBlocks-editor-execution-order-desc" title="">
-                                <span data-i18n="Execution Order">Execution Order</span>
+                            <small title="">
+                                <span>Execution Order</span>
                                 <span class="fa-solid fa-circle-question note-link-span"></span>
                             </small>
                             <select name="ExtBlocks-editor-execution-order" class="text_pole">

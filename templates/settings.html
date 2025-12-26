@@ -1,18 +1,18 @@
 <div class="extblocks_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b data-i18n="ExtBlocks">ExtBlocks</b>
+            <b>ExtBlocks</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
 
 
         <div class="inline-drawer-content">
 			<label class="flex-container">
-				<input type="checkbox" id="extblocks_is_enabled"><span data-i18n="Enable ExtBlocks">Enable ExtBlocks</span>
+				<input type="checkbox" id="extblocks_is_enabled"><span>Enable ExtBlocks</span>
 			</label>
 
             <div class="ExtBlocks-preset">
-                <strong for="ExtBlocks-preset-actions" data-i18n="ExtBlocks Preset">
+                <strong for="ExtBlocks-preset-actions">
                     ExtBlocks Preset:
                 </strong>
                 <div class="ExtBlocks-preset-actions">
@@ -25,14 +25,14 @@
                 </div>
             </div>
 
-            <div id="ExtBlocks-proxy-toggle" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-proxy-tip" title="Proxy settings, temperature, system prompt, etc.">
+            <div id="ExtBlocks-proxy-toggle" class="menu_button menu_button_icon" title="Proxy settings, temperature, system prompt, etc.">
                 <i class="fa-solid fa-cog"></i>
-                <span data-i18n="ExtBlocks-proxy-settings">API Settings</span>
+                <span>API Settings</span>
             </div>
 
             <div id="ExtBlocks-proxy" style="display:none;">
                 <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-api-preset" data-i18n="API Preset">
+                    <label for="ExtBlocks-api-preset">
                         API Preset:
                     </label>
                     <select id="ExtBlocks-api-preset" class="text_pole">
@@ -43,7 +43,7 @@
                 </div>
 
                 <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-proxy-connection-profile" data-i18n="Connection Profile">
+                    <label for="ExtBlocks-proxy-connection-profile">
                         Connection Profile:
                     </label>
                     <div class="flex-container">
@@ -55,34 +55,34 @@
                 <hr>
 
                 <div class="flex-container">
-                    <input type="checkbox" id="ExtBlocks-proxy-stream"><span data-i18n="Stream">Stream</span>
+                    <input type="checkbox" id="ExtBlocks-proxy-stream"><span>Stream</span>
                 </div>
 
                 <hr>
 
                 <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-proxy-temperature" data-i18n="Temperature">
+                    <label for="ExtBlocks-proxy-temperature">
                         Temperature:
                     </label>
                     <input id="ExtBlocks-proxy-temperature" class="text_pole" type="number" min="0" max="2.0" step="0.01">
                 </div>
 
                 <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-proxy-temperature" data-i18n="Top P">
+                    <label for="ExtBlocks-proxy-temperature">
                         Top P:
                     </label>
                     <input id="ExtBlocks-proxy-topp" class="text_pole" type="number" min="0" max="1.0" step="0.01">
                 </div>
 
                 <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-proxy-temperature" data-i18n="Max Tokens">
+                    <label for="ExtBlocks-proxy-temperature">
                         Max Tokens:
                     </label>
                     <input id="ExtBlocks-proxy-maxtokens" class="text_pole" type="number" min="0" step="1">
                 </div>
 
                 <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-proxy-reasoningeffort" data-i18n="Reasoning Effort">
+                    <label for="ExtBlocks-proxy-reasoningeffort">
                         Reasoning Effort:
                     </label>
                     <select id="ExtBlocks-proxy-reasoningeffort" class="text_pole">
@@ -95,13 +95,6 @@
                     </select>
                 </div>
 
-                <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-proxy-prefill" data-i18n="Assistant Prefill">
-                        Assistant Prefill:
-                    </label>
-                    <textarea class="textarea_compact text_pole" id="ExtBlocks-proxy-prefill" rows="3"></textarea>
-                </div>
-
                 <hr>
 
                 <label class="flex-container">
@@ -112,55 +105,28 @@
             
             </div>
 
-            <div id="ExtBlocks-autoregex-toggle" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-autoregex-tip" title="Hiding blocks from messages by their names.">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span data-i18n="ExtBlocks-autoregex-title">Autoregex</span>
-            </div>
-
-            <div id="ExtBlocks-autoregex" style="display:none;">
-
-                <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-autoregex-display" data-i18n="Blocks to hide">
-                        Hide from display (comma separated blocks names):
-                    </label>
-                    <textarea class="textarea_compact text_pole" id="ExtBlocks-autoregex-display" rows="3"></textarea>
-                </div>
-
-                <div class="flex-container flexFlowColumn">
-                    <label for="ExtBlocks-autoregex-prompt" data-i18n="Blocks to hide">
-                        Hide from prompt (comma separated blocks names):
-                    </label>
-                    <textarea class="textarea_compact text_pole" id="ExtBlocks-autoregex-prompt" rows="3"></textarea>
-                </div>
-
-                <div id="ExtBlocks-autoregex-apply" class="menu_button menu_button_icon" title="">
-                    <small data-i18n="ExtBlocks-autoregex-apply">Apply</small>
-                </div>
-            
-            </div>
-
             <hr>
 
             <div id="ExtBlocks-blocks-global">
                 <div>
-                    <strong data-i18n="ExtBlocks-blocks-global-label">Preset blocks:</strong>
+                    <strong>Preset blocks:</strong>
                 </div>
                 <div class="flex-container">
-                    <div id="ExtBlocks-blocks-global-openeditor" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-blocks-global-new-desc" title="New generated block">
+                    <div id="ExtBlocks-blocks-global-openeditor" class="menu_button menu_button_icon" title="New generated block">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <small data-i18n="ExtBlocks-blocks-global-new">+ G-Block</small>
+                        <small>+ G-Block</small>
                     </div>
-                    <div id="ExtBlocks-blocks-global-openaccumulationeditor" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-blocks-scoped-new-desc" title="New accumulation block">
+                    <div id="ExtBlocks-blocks-global-openaccumulationeditor" class="menu_button menu_button_icon" title="New accumulation block">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <small data-i18n="ExtBlocks-blocks-global-newaccumulation">+ A-Block</small>
+                        <small>+ A-Block</small>
                     </div>
-                    <div id="ExtBlocks-blocks-global-openscripteditor" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-blocks-scoped-new-desc" title="New script block">
+                    <div id="ExtBlocks-blocks-global-openscripteditor" class="menu_button menu_button_icon" title="New script block">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <small data-i18n="ExtBlocks-blocks-global-newscript">+ S-Block</small>
+                        <small>+ S-Block</small>
                     </div>
                     <div id="ExtBlocks-blocks-global-import" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-file-import"></i>
-                        <small data-i18n="ExtBlocks-blocks-global-import">Import</small>
+                        <small>Import</small>
                     </div>
                     <input type="file" id="ExtBlocks-blocks-global-import-file" hidden accept="*.json" multiple />
                 </div>
@@ -172,24 +138,24 @@
 
             <div id="ExtBlocks-blocks-scoped">
                 <div>
-                    <strong data-i18n="ExtBlocks-blocks-scoped-label" title="Blocks embedded in the сurrent card.">Embedded blocks:</strong>
+                    <strong title="Blocks embedded in the сurrent card.">Embedded blocks:</strong>
                 </div>
                 <div class="flex-container">
-                    <div id="ExtBlocks-blocks-scoped-openeditor" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-blocks-scoped-new-desc" title="New generated block">
+                    <div id="ExtBlocks-blocks-scoped-openeditor" class="menu_button menu_button_icon" title="New generated block">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <small data-i18n="ExtBlocks-blocks-scoped-new">+ G-Block</small>
+                        <small>+ G-Block</small>
                     </div>
-                    <div id="ExtBlocks-blocks-scoped-openaccumulationeditor" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-blocks-scoped-new-desc" title="New accumulation block">
+                    <div id="ExtBlocks-blocks-scoped-openaccumulationeditor" class="menu_button menu_button_icon" title="New accumulation block">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <small data-i18n="ExtBlocks-blocks-scoped-newaccumulation">+ A-Block</small>
+                        <small>+ A-Block</small>
                     </div>
-                    <div id="ExtBlocks-blocks-scoped-openscripteditor" class="menu_button menu_button_icon" data-i18n="[title]ExtBlocks-blocks-scoped-new-desc" title="New script block">
+                    <div id="ExtBlocks-blocks-scoped-openscripteditor" class="menu_button menu_button_icon" title="New script block">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <small data-i18n="ExtBlocks-blocks-scoped-newscript">+ S-Block</small>
+                        <small>+ S-Block</small>
                     </div>
                     <div id="ExtBlocks-blocks-scoped-import" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-file-import"></i>
-                        <small data-i18n="ExtBlocks-blocks-scoped-import">Import</small>
+                        <small>Import</small>
                     </div>
                     <input type="file" id="ExtBlocks-blocks-scoped-import-file" hidden accept="*.json" multiple />
                 </div>

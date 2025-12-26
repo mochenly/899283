@@ -2,10 +2,15 @@
     <span class="drag-handle menu-handle">&#9776;</span>
     <div class="ExtBlocks_editor_context_item_name flexGrow overflow-hidden"></div>
     <div class="flex-container flexnowrap">
-        <div class="edit_context_item menu_button" data-i18n="[title]ExtBlocks_edit_context_item" title="Edit item">
+        <label class="checkbox flex-container ExtBlocks-toggler">
+            <input type="checkbox" name="ExtBlocks_context_item_disable" class="disable_ExtBlocks" />
+            <span class="ExtBlocks-toggle-on fa-solid fa-toggle-on" title="Disable item"></span>
+            <span class="ExtBlocks-toggle-off fa-solid fa-toggle-off" title="Enable item"></span>
+        </label>
+        <div class="edit_context_item menu_button" title="Edit item">
             <i class="fa-solid fa-pencil"></i>
         </div>
-        <div class="delete_context_item menu_button" data-i18n="[title]ExtBlocks_delete_context_item" title="Delete item">
+        <div class="delete_context_item menu_button" title="Delete item">
             <i class="fa-solid fa-trash"></i>
         </div>
     </div>

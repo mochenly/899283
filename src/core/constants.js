@@ -1,20 +1,19 @@
-import { extension_settings } from '../../../../extensions.js';
+const { extensionSettings } = SillyTavern.getContext();
 
 export const defaultApiPreset = {
     temperature: 0.2,
     top_p: 1,
     max_tokens: 4096,
     reasoning_effort: 'auto',
-    assistant_prefill: '',
     confirmation_jb: false,
-    connection_profile: extension_settings.connectionManager.selectedProfile,
+    connection_profile: extensionSettings.connectionManager.selectedProfile,
     stream: false,
-}
+};
 
 export const defaultSet = {
     name: 'Default',
     global_blocks: [],
-}
+};
 
 export const defaultSettings = {
     extblocks_is_enabled: false,
@@ -26,30 +25,14 @@ export const defaultSettings = {
         'medium': { ...defaultApiPreset },
         'small': { ...defaultApiPreset },
     },
-    autohide_display: '',
-    autohide_prompt: '',
     sets: [ defaultSet ]
 };
 
-export const extName = 'ExtBlocks'
+export const extName = 'ExtBlocks';
 export const defaultExtPrefix = '[ExtBlocks]';
 export const worldInfoMacrosNames = ['{{wiBefore}}', '{{wiAfter}}', '{{wiExamples}}', '{{wiDepth}}', '{{wiAll}}'];
 export const mainPromptMacros = '{{mainPrompt}}';
 
-export const extStates = {
-    ExtBlocks_settings: undefined,
-    current_set: undefined,
-    api_preset: undefined,
-    connection_profile: undefined,
-    spoilerRegex: undefined,
-    self_reload_flag: false,
-    is_chat_modified: false,
-    generationPaused: false,
-    cachedPauseBlocks: null,
-    triggeredPauseBlock: null,
-    pauseCounter: 0,
-    abortController: null,
-}
 export const path = 'third-party/extblocks';
 export const templates_path = path + '/templates';
 
@@ -65,18 +48,18 @@ export const ContextType = {
     LAST_MESSAGES: 'last_messages',
     LAST_MESSAGES_KEYWORD: 'last_messages_keyword',
     PREVIOUS_BLOCK: 'previous_block'
-}
+};
 
 export const ScriptType = {
     ST: 'stscript',
     JS: 'js'
-}
+};
 
 export const MessageRole = {
     SYSTEM: 'system',
     USER: 'user',
     ASSISTANT: 'assistant'
-}
+};
 
 export const ElementTemplate = {
     SETTINGS: 'settings',
@@ -86,8 +69,9 @@ export const ElementTemplate = {
     STORAGE_EDITOR: 'storage_editor',
     GENERATED_EDITOR: 'editor',
     ACCUMULATION_EDITOR: 'accumulation_editor',
-    SCRIPT_EDITOR: 'script_editor'
-}
+    SCRIPT_EDITOR: 'script_editor',
+    SELECTION_POPUP: 'selection_popup'
+};
 
 export const ExtSlashCommand = {
     GENERATE: 'extblocks-generate',
@@ -99,6 +83,24 @@ export const ExtSlashCommand = {
     STORAGE_EXPORT: 'extblocks-storage-export',
     FLUSH_INJECTS: 'extblocks-flushinjects',
     ABORT: 'extblocks-abort-generation'
+};
+
+export const MacroName = {
+    MAIN: `${extName}`,
+    GET_BLOCK_BY_NAME: `${extName}-GetBlockByName`,
+    CALL_GENERATION: `${extName}-Call`,
+    CALL_REWRITE: `${extName}-CallRewrite`,
+    CALL_SCRIPT: `${extName}-CallScript`
 }
 
-export const editButton = `<div title="Edit extblocks" class="mes_button Extblocks-storage-edit fa-solid fa-pen-to-square interactable" data-i18n="[title]Edit extblocks" tabindex="0"></div>`;
+export const ExtTopic = {
+    GENERATE_BLOCKS: '/extblocks/generate',
+    BLOCKS_GENERATED: '/extblocks/generated',
+    FATPRESETS_IMPORT: '/fatpresets/import/extblocks',
+    FATPRESETS_CHANGE: '/fatpresets/change/extblocks',
+    FATPRESETS_DISABLE: '/fatpresets/disable/extblocks',
+    PROMPT_TEMPLATE_ENGINE: '/prompttemplateengine/render'
+}
+
+export const editButton = `<div title="Edit extblocks" class="mes_button Extblocks-storage-edit fa-solid fa-pen-to-square interactable" tabindex="0"></div>`;
+export const selectionRewriteButton = `<div title="[ExtBlocks] Partial rewrite" class="menu_button Extblocks-selection-rewrite fa-solid fa-pen-to-square interactable" tabindex="0" role="button"></div>`;
