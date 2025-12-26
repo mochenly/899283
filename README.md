@@ -195,7 +195,7 @@ Rewrite blocks support partial rewriting. You can select a specific part of the 
 	</rewritten text>
 	```
 	**Block prompt:**
-	```
+  ```
   Rewrite the given text.
   {{textToRewrite}}
   ```
