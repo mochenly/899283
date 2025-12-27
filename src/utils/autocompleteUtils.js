@@ -87,6 +87,7 @@ function getObjectSuggestions(obj) {
 
 const GLOBAL_KEYWORDS = [
     ...Object.keys(API_OBJECTS),
+    'messageId', 'isUser', 'allBlocks', 'triggeredBlocks', 'additionalMacro', 'is_separate',
     'executeST(text)', 'const', 'let', 'var', 'async', 'await', 'function', 'if', 'else', 'for', 'while', 'switch', 'case', 'break', 'continue', 'return', 'try', 'catch', 'finally', 'throw', 'new', 'this', 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity'
 ];
 
