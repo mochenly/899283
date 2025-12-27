@@ -213,6 +213,14 @@ In the edit window, you can set the following for a block:
 ##### **Working with STScript:**
 - `(async) executeST(text)`: Executes an STScript string passed to the function.
 
+##### **Context Variables (available as direct variables):**
+- `messageId`: The ID of the message for which the script is executed.
+- `isUser`: Boolean, whether the message is from the user.
+- `allBlocks`: Array of all enabled blocks.
+- `triggeredBlocks`: Array of blocks triggered for the current message.
+- `additionalMacro`: Object containing additional macros (e.g., `{{additionalPrompt}}`).
+- `is_separate`: Boolean, whether the generation is for a separate message.
+
 ##### **Getting Blocks:**
 - `BlockService.getAllBlocks()`: Retrieves all blocks from the current preset and character card as an array.
 - `BlockService.getBlocksByType(types, enabledOnly)`: Retrieves blocks by their types (e.g., `['generated']`).

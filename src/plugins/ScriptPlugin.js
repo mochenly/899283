@@ -29,7 +29,8 @@ async function executeST(text) {
  * Executes a JavaScript script.
  * @param {string} text 
  */
-async function executeJS(text) {
+async function executeJS(text, args = {}) {
+    const { messageId, isUser, allBlocks, triggeredBlocks, additionalMacro, is_separate } = args;
     try {
         await eval(`(async () => { ${text} })()`);
     } catch (error) {
@@ -63,7 +64,7 @@ export const ScriptPlugin = {
             if (blockScriptType === ScriptType.ST) {
                 await executeST(blockScript);
             } else if (blockScriptType === ScriptType.JS) {
-                await executeJS(blockScript);
+                await executeJS(blockScript, options);
             }
         }
     }

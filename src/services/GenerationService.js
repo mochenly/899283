@@ -35,7 +35,8 @@ export const GenerationService = {
         const rewritePlugin = PluginRegistry.get(BlockType.REWRITE);
         const generatedPlugin = PluginRegistry.get(BlockType.GENERATED);
 
-        if (scriptPlugin) await scriptPlugin.execute(scriptBlocks, { execution_order: 'before' });
+        const options = { messageId, isUser, allBlocks, triggeredBlocks, additionalMacro, is_separate };
+        if (scriptPlugin) await scriptPlugin.execute(scriptBlocks, { ...options, execution_order: 'before' });
         if (rewritePlugin) await rewritePlugin.execute(rewriteBlocks, { messageId, allBlocks, generation_order: 'before', additionalMacro });
 
         let blocksList = [];
@@ -44,7 +45,7 @@ export const GenerationService = {
         }
 
         if (rewritePlugin) await rewritePlugin.execute(rewriteBlocks, { messageId, allBlocks, generation_order: 'after', additionalMacro });
-        if (scriptPlugin) await scriptPlugin.execute(scriptBlocks, { execution_order: 'after' });
+        if (scriptPlugin) await scriptPlugin.execute(scriptBlocks, { ...options, execution_order: 'after' });
 
         return blocksList;
     },
