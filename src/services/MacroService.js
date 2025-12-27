@@ -1,3 +1,4 @@
+import { checkWorldInfo } from '../../../../../world-info.js';
 import { mainPromptMacros, worldInfoMacrosNames, extName, MacroName, ExtTopic } from '../core/constants.js';
 import { BlockService } from './BlockService.js';
 import { ContextService } from './ContextService.js';
@@ -8,8 +9,7 @@ const {
     chatCompletionSettings, 
     setupChatCompletionPromptManager, 
     powerUserSettings, 
-    macros, 
-    checkWorldInfo,
+    macros,
     eventSource
 } = SillyTavern.getContext();
 
