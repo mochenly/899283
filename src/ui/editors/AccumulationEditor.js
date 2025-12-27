@@ -49,7 +49,7 @@ export const AccumulationEditor = {
         editorHtml.find('#ExtBlocks-accumulationeditor-copy-prompt').on('click', () => {
             const blockName = editorHtml.find('.ExtBlocks-accumulationeditor-block-name').val() || 'block_name';
             const updaterName = editorHtml.find('.ExtBlocks-accumulationeditor-blockupdater-name').val() || 'updater_name';
-            const prompt = `To update the <${blockName}> block, use the <${updaterName}> block with MongoDB-style operators ($set, $inc, $push, $pull, $unset) in YAML format.
+            const prompt = `To update the <${blockName}> block, use the <${updaterName}> block with MongoDB-style operators ($set, $inc, $push, $pull, $unset) in YAML format. Dot notation (e.g., path.to.0.field) is supported.
 Example:
 <${updaterName}>
 $inc:
@@ -58,6 +58,7 @@ $push:
   inventory: Sword
 $set:
   status.is_happy: true
+  knownLocations.0.visited: true
 </${updaterName}>`;
             navigator.clipboard.writeText(prompt);
             toastr.success('Default prompt copied to clipboard!');

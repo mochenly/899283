@@ -35,7 +35,12 @@ export const CommandService = {
             if (args.is_separate) {
                 is_separate = args.is_separate;
             }
-            await GenerationService.handleBlocksGeneration(messageId, false, allBlocks, blocks, additionalMacro, is_separate);
+            const generatedBlocksList = await GenerationService.handleBlocksGeneration(messageId, false, allBlocks, blocks, additionalMacro, is_separate);
+            if (generatedBlocksList && generatedBlocksList.length > 0) {
+                const combinedGeneratedContent = generatedBlocksList.join('\n');
+                const allEnabledBlocks = BlockService.getAllEnabledBlocks();
+                await GenerationService.handleBlocksAccumulation(messageId, false, allEnabledBlocks, combinedGeneratedContent);
+            }
         } else {
             toastr.warning(`Blocks not found.`);
         }

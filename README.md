@@ -114,19 +114,28 @@ In the edit window, you can set the following for a block:
 
 	**Example of an updater block**
 	The updater block uses **MongoDB-style operators** in YAML format to modify the state. Supported operators include:
-	- `$set`: Sets the value of a field (supports dot notation for nested fields).
-	- `$inc`: Increments/decrements a numeric field.
-	- `$push`: Adds an item to an array.
-	- `$pull`: Removes an item from an array.
-	- `$unset`: Removes a field.
+	- `$set`: Sets the value of a field. Supports dot notation for nested fields (e.g., `path.to.field`).
+	- `$inc`: Increments/decrements a numeric field. Supports dot notation.
+	- `$push`: Adds an item to an array. Supports dot notation.
+	- `$pull`: Removes an item from an array. Supports dot notation.
+	- `$unset`: Removes a field. Supports dot notation.
+
+	**Note:** Dot notation also supports numeric indices for arrays (e.g., `items.0.name`).
+
 	```yaml
 	<example updater>
 	$set:
 	  Name: User
+	  Stats.Strength: 15
+	  Stats:
+	    Agility: 20
 	$inc:
 	  Gold: 5
 	$push:
 	  Inventory: Scroll
+	  Characters.0.Relationships:
+	    - character1: Jasmine
+	      character2: Azarel
 	$pull:
 	  Inventory: Apple
 	</example updater>

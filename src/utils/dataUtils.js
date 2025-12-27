@@ -65,6 +65,45 @@ export function priorityCombineBlocks(globalBlocks, scopedBlocks) {
 }
 
 /**
+ * Resolves a dot-notation path in an object.
+ * @param {Object} doc The document to traverse.
+ * @param {string} path The dot-notation path (e.g., "a.b.0.c").
+ * @param {boolean} createMissing Whether to create missing intermediate objects/arrays.
+ * @returns {{parent: Object|Array, lastKey: string}|null} The parent object and the last key in the path, or null if path cannot be resolved.
+ */
+function resolvePath(doc, path, createMissing = false) {
+    if (!path || typeof path !== 'string') return null;
+    if (!path.includes('.')) {
+        return { parent: doc, lastKey: path };
+    }
+
+    const parts = path.split('.');
+    let current = doc;
+
+    for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i];
+        const nextPart = parts[i + 1];
+
+        if (current[part] === undefined || current[part] === null) {
+            if (createMissing) {
+                // If the next part is a numeric string, create an array, otherwise an object
+                current[part] = /^\d+$/.test(nextPart) ? [] : {};
+            } else {
+                return null;
+            }
+        }
+        current = current[part];
+
+        // If we hit a non-object/non-array while traversing, we can't continue
+        if (typeof current !== 'object' || current === null) {
+            return null;
+        }
+    }
+
+    return { parent: current, lastKey: parts[parts.length - 1] };
+}
+
+/**
  * Applies MongoDB-style update operators to a document.
  * Supported operators: $set, $inc, $push, $pull, $unset.
  * @param {Object} doc The document to update.
@@ -75,26 +114,41 @@ export function applyMongoUpdate(doc, update) {
     if (!update || typeof update !== 'object') return doc;
 
     const operators = {
-        $set: (d, k, v) => { setDeepValue(d, k, v); },
-        $unset: (d, k) => { unsetDeepValue(d, k); },
+        $set: (d, k, v) => {
+            const resolved = resolvePath(d, k, true);
+            if (resolved) resolved.parent[resolved.lastKey] = v;
+        },
+        $unset: (d, k) => {
+            const resolved = resolvePath(d, k, false);
+            if (resolved) delete resolved.parent[resolved.lastKey];
+        },
         $inc: (d, k, v) => {
-            const current = getDeepValue(d, k) || 0;
-            setDeepValue(d, k, current + v);
+            const resolved = resolvePath(d, k, true);
+            if (resolved) {
+                const current = resolved.parent[resolved.lastKey] || 0;
+                resolved.parent[resolved.lastKey] = current + v;
+            }
         },
         $push: (d, k, v) => {
-            const current = getDeepValue(d, k) || [];
-            if (Array.isArray(current)) {
-                current.push(v);
-                setDeepValue(d, k, current);
+            const resolved = resolvePath(d, k, true);
+            if (resolved) {
+                if (!Array.isArray(resolved.parent[resolved.lastKey])) {
+                    resolved.parent[resolved.lastKey] = [];
+                }
+                if (Array.isArray(v)) {
+                    resolved.parent[resolved.lastKey].push(...v);
+                } else {
+                    resolved.parent[resolved.lastKey].push(v);
+                }
             }
         },
         $pull: (d, k, v) => {
-            const current = getDeepValue(d, k) || [];
-            if (Array.isArray(current)) {
-                const index = current.indexOf(v);
+            const resolved = resolvePath(d, k, false);
+            if (resolved && Array.isArray(resolved.parent[resolved.lastKey])) {
+                const arr = resolved.parent[resolved.lastKey];
+                const index = arr.indexOf(v);
                 if (index !== -1) {
-                    current.splice(index, 1);
-                    setDeepValue(d, k, current);
+                    arr.splice(index, 1);
                 }
             }
         }
@@ -107,35 +161,10 @@ export function applyMongoUpdate(doc, update) {
             }
         } else if (!op.startsWith('$')) {
             // Default to $set behavior for top-level keys if no operator is provided
-            doc[op] = update[op];
+            const resolved = resolvePath(doc, op, true);
+            if (resolved) resolved.parent[resolved.lastKey] = update[op];
         }
     }
 
     return doc;
-}
-
-function setDeepValue(obj, path, value) {
-    const keys = path.split('.');
-    let current = obj;
-    for (let i = 0; i < keys.length - 1; i++) {
-        if (!current[keys[i]] || typeof current[keys[i]] !== 'object') {
-            current[keys[i]] = {};
-        }
-        current = current[keys[i]];
-    }
-    current[keys[keys.length - 1]] = value;
-}
-
-function getDeepValue(obj, path) {
-    return path.split('.').reduce((prev, curr) => prev && prev[curr], obj);
-}
-
-function unsetDeepValue(obj, path) {
-    const keys = path.split('.');
-    let current = obj;
-    for (let i = 0; i < keys.length - 1; i++) {
-        if (!current[keys[i]]) return;
-        current = current[keys[i]];
-    }
-    delete current[keys[keys.length - 1]];
 }

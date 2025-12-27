@@ -24,36 +24,10 @@ function parseYaml(str) {
  */
 function stringifyYaml(obj) {
     try {
-        return yaml.dump(obj);
+        return yaml.dump(obj, { lineWidth: -1 });
     } catch (e) {
         console.error('[ExtBlocks] Failed to stringify YAML:', e);
         return '';
-    }
-}
-
-/**
- * Extracts the wrapper (tags) from an accumulation block string.
- */
-function getAccumulationBlockWrapper(blockStr) {
-    const lines = blockStr.trim().split('\n');
-    const upperWrapper = [];
-    const bottomWrapper = [];
-
-    for (let idx = 0; idx < lines.length; idx++) {
-        const line = lines[idx].trim();
-        if (line.includes(':') || line.startsWith('-')) break;
-        upperWrapper.push(line);
-    }
-
-    for (let idx = lines.length - 1; idx >= 0; idx--) {
-        const line = lines[idx].trim();
-        if (line.includes(':') || line.startsWith('-')) break;
-        bottomWrapper.push(line);
-    }
-
-    return {
-        upperWrapper: upperWrapper.join('\n'),
-        bottomWrapper: bottomWrapper.join('\n')
     }
 }
 
@@ -75,23 +49,25 @@ export const AccumulationPlugin = {
 
         for (const block of blocks) {
             const blockStr = ContextService.getPreviousBlockContextUnconditional(block, messageId, true);
-            if (!blockStr) continue;
             
-            const wrapper = getAccumulationBlockWrapper(blockStr);
-            let content = blockStr;
-            if (wrapper.upperWrapper) content = content.replace(wrapper.upperWrapper, '');
-            if (wrapper.bottomWrapper) content = content.replace(wrapper.bottomWrapper, '');
-            
-            const blockJson = parseYaml(content);
+            let blockJson;
+            if (!blockStr) {
+                blockJson = {};
+            } else {
+                const content = getMultiBlockContentFromMessage(blockStr, block.name);
+                blockJson = parseYaml(content);
+            }
             const sourceText = externalContent || chat[messageId].mes;
             const blockUpdaterStr = getMultiBlockContentFromMessage(sourceText, block.updater_name);
             
             if (blockUpdaterStr) {
-                const updateOps = parseYaml(blockUpdaterStr);
+                let updaterContent = blockUpdaterStr;
+
+                const updateOps = parseYaml(updaterContent);
                 const updatedBlock = applyMongoUpdate(blockJson, updateOps);
                 
                 const newContent = stringifyYaml(updatedBlock);
-                const updatedBlockStr = `${wrapper.upperWrapper || `<${block.name}>`}\n${newContent.trim()}\n${wrapper.bottomWrapper || `</${block.name}>`}`;
+                const updatedBlockStr = `${`<${block.name}>`}\n${newContent.trim()}\n${`</${block.name}>`}`;
                 results.push(updatedBlockStr);
             }
         }
