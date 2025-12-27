@@ -51,6 +51,7 @@ export const SettingsUI = {
                 MacroService.unregisterExtensionMacros();
                 if (SillyTavern.getContext().characterId !== undefined) {
                     await BlockService.purgeAllBlocksDisplayText();
+                    BlockService.removeAllBlockInjects();
                 }
             }
             saveSettingsDebounced();

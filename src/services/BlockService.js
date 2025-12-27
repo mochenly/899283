@@ -16,6 +16,7 @@ const {
     reloadCurrentChat,
     extensionSettings,
     setExtensionPrompt,
+    extensionPrompts,
     substituteParams
 } = SillyTavern.getContext();
 
@@ -426,6 +427,29 @@ export const BlockService = {
             depth = chat.length - depth;
         }
         setExtensionPrompt(key, block, position, depth, true, role);
+    },
+
+    /**
+     * Removes the block inject from the extension prompt.
+     */
+    removeBlockInject(blockConfig) {
+        const blockKey = `${defaultExtPrefix} ${blockConfig.name}`;
+        for (const key of Object.keys(extensionPrompts)) {
+            if (key === blockKey) {
+                delete extensionPrompts[key];
+            }
+        }
+    },
+
+    /**
+     * Removes all block injects from the extension prompt.
+     */
+    removeAllBlockInjects() {
+        for (const key of Object.keys(extensionPrompts)) {
+            if (key.startsWith(defaultExtPrefix)) {
+                delete extensionPrompts[key];
+            }
+        }
     },
 
     /**

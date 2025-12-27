@@ -166,6 +166,8 @@ export const GenerationService = {
                     const previous_block_content = getBlockFromMessage(previous_block_full, blockConfig.name);
                     BlockService.injectBlock(previous_block_content, blockConfig);
                 }
+            } else if (!blockConfig.inject_block && blockConfig.block_type !== BlockType.REWRITE && blockConfig.block_type !== BlockType.SCRIPT) {
+                BlockService.removeBlockInject(blockConfig);
             }
         });
     },

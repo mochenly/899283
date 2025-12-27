@@ -162,6 +162,9 @@ export const MainUI = {
 
             const toggleBlock = async () => {
                 block.disabled = !!$checkbox.prop('checked');
+                if (block.disabled) {
+                    BlockService.removeBlockInject(block);
+                }
                 await BlockService.saveBlock(block, index, isScoped);
             };
 
