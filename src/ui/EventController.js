@@ -62,8 +62,10 @@ export const EventController = {
 
 
         eventSource.on(event_types.GENERATION_AFTER_COMMANDS, (type, data, dryRun) => {
-            if (!dryRun) {
-                BlockService.injectAllEnabledBlocks(chat.length - 1);
+            if (!dryRun && type !== 'quiet') {
+                const messageId = type === 'regenerate' ? chat.length - 2 : chat.length - 1;
+                if (messageId >= 0) BlockService.injectAllEnabledBlocks(messageId);
+                else BlockService.removeAllBlockInjects();
             }
         });
 
