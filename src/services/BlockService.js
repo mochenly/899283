@@ -2,7 +2,7 @@ import { getFileText } from '../../../../../utils.js';
 import { extStates } from '../core/state.js';
 import { extName, BlockType, defaultExtPrefix, MessageRole } from '../core/constants.js';
 import { ContextService } from './ContextService.js';
-import { getBlockEncloseRegex, getRegexForBlock, getBlockFromMessageWithRegex } from '../utils/blockUtils.js';
+import { getBlockEncloseRegex, getRegexForBlock, getBlockFromMessageWithRegex, getBlockFromMessage  } from '../utils/blockUtils.js';
 import { updateOrInsert } from '../utils/dataUtils.js';
 
 const {
@@ -427,6 +427,26 @@ export const BlockService = {
             depth = chat.length - depth;
         }
         setExtensionPrompt(key, block, position, depth, true, role);
+    },
+
+    /**
+     * Injects all enabled blocks into the extension prompt.
+     */
+    injectAllEnabledBlocks(messageId) {
+        const allBlocks = this.getAllEnabledBlocks();
+        allBlocks.forEach(blockConfig => {
+            if (blockConfig.inject_block && blockConfig.block_type !== BlockType.REWRITE && blockConfig.block_type !== BlockType.SCRIPT) {
+                const previous_block_full = ContextService.getPreviousBlockContextUnconditional(blockConfig, messageId, true, 1);
+                if (previous_block_full) {
+                    const previous_block_content = getBlockFromMessage(previous_block_full, blockConfig.name);
+                    this.injectBlock(previous_block_content, blockConfig);
+                } else {
+                    this.injectBlock('', blockConfig);
+                }
+            } else if (!blockConfig.inject_block && blockConfig.block_type !== BlockType.REWRITE && blockConfig.block_type !== BlockType.SCRIPT) {
+                this.removeBlockInject(blockConfig);
+            }
+        });
     },
 
     /**

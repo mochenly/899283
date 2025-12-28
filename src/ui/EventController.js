@@ -60,6 +60,13 @@ export const EventController = {
 
         eventSource.on(event_types.MESSAGE_DELETED, () => extStates.is_chat_modified = true);
 
+
+        eventSource.on(event_types.GENERATION_AFTER_COMMANDS, (type, data, dryRun) => {
+            if (!dryRun) {
+                BlockService.injectAllEnabledBlocks(chat.length - 1);
+            }
+        });
+
         eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, async (messageId) => {
             if (!extensionSettings.ExtBlocks.extblocks_is_enabled) {
                 return;

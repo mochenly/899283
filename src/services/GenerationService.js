@@ -158,18 +158,6 @@ export const GenerationService = {
             extStates.is_chat_modified = false;
             await this.handleMessageTrigger(messageId, true);
         }
-        const allBlocks = BlockService.getAllEnabledBlocks();
-        allBlocks.forEach(blockConfig => {
-            if (blockConfig.inject_block && blockConfig.block_type !== BlockType.REWRITE && blockConfig.block_type !== BlockType.SCRIPT) {
-                const previous_block_full = ContextService.getPreviousBlockContextUnconditional(blockConfig, messageId, true, 1);
-                if (previous_block_full) {
-                    const previous_block_content = getBlockFromMessage(previous_block_full, blockConfig.name);
-                    BlockService.injectBlock(previous_block_content, blockConfig);
-                }
-            } else if (!blockConfig.inject_block && blockConfig.block_type !== BlockType.REWRITE && blockConfig.block_type !== BlockType.SCRIPT) {
-                BlockService.removeBlockInject(blockConfig);
-            }
-        });
     },
 
     /**
