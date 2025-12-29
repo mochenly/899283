@@ -1,6 +1,6 @@
 # ExtBlocks (External Blocks)
 
-  For SillyTavern 1.14.0+ (staging)
+  For SillyTavern 1.15.0+
 
 	This extension allows for the external generation of content blocks.
 
