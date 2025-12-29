@@ -148,7 +148,30 @@ export const GeneratedEditor = {
             const value = editorHtml.find(`select[name="ExtBlocks-editor-context-item"]`).val();
 
             updateContextItemFieldsVisibility(value);
-            exitEditMode(value);
+            
+            const defaults = EditorService.createContextItem(value);
+
+            if (value === ContextType.TEXT) {
+                editorHtml.find('.ExtBlocks-editor-context-builder-text-content').val(defaults.text);
+            } else if (value === ContextType.LAST_MESSAGES) {
+                editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-count"]').val(defaults.messages_count);
+                editorHtml.find('input[name="ExtBlocks-editor-context-builder-messages-offset"]').val(defaults.messages_offset);
+                editorHtml.find('select[name="ExtBlocks-editor-context-builder-messages-separator"]').val(defaults.messages_separator);
+                editorHtml.find('.ExtBlocks-editor-context-builder-messages-userprefix').val(defaults.user_prefix);
+                editorHtml.find('.ExtBlocks-editor-context-builder-messages-usersuffix').val(defaults.user_suffix);
+                editorHtml.find('.ExtBlocks-editor-context-builder-messages-charprefix').val(defaults.char_prefix);
+                editorHtml.find('.ExtBlocks-editor-context-builder-messages-charsuffix').val(defaults.char_suffix);
+            } else if (value === ContextType.LAST_MESSAGES_KEYWORD) {
+                editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-keywordstopper').val(defaults.keyword_stopper);
+                editorHtml.find('select[name="ExtBlocks-editor-context-builder-keywordmessages-separator"]').val(defaults.messages_separator);
+                editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-userprefix').val(defaults.user_prefix);
+                editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-usersuffix').val(defaults.user_suffix);
+                editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-charprefix').val(defaults.char_prefix);
+                editorHtml.find('.ExtBlocks-editor-context-builder-keywordmessages-charsuffix').val(defaults.char_suffix);
+            } else if (value === ContextType.PREVIOUS_BLOCK) {
+                editorHtml.find('.ExtBlocks-editor-context-builder-block-name').val(defaults.block_name);
+                editorHtml.find('input[name="ExtBlocks-editor-context-builder-block-count"]').val(defaults.block_count);
+            }
         };
 
         const getContextItemFromUI = (id) => {
