@@ -203,12 +203,12 @@ export const BlockService = {
             const swipeId = message.swipe_id;
             if (!message.swipe_info) message.swipe_info = {};
             if (!message.swipe_info[swipeId]) {
-                message.swipe_info[swipeId] = {
+                message.swipe_info[swipeId] = structuredClone({
                     send_date: message.send_date,
                     gen_started: message.gen_started,
                     gen_finished: message.gen_finished,
                     extra: {},
-                };
+                });
             };
             if (!message.swipe_info[swipeId].extra) message.swipe_info[swipeId].extra = {};
             
