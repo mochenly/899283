@@ -253,8 +253,12 @@ export const BlockService = {
      * Updates display text for all messages in the chat.
      */
     async updateAllBlocksDisplayText() {
-        for (let messageId = 0; messageId < chat.length; messageId++) {
-            await this.updateBlocksDisplay(messageId);
+        try {
+            for (let messageId = chat.length - 1; messageId >= 0; messageId--) {
+                await this.updateBlocksDisplay(messageId);
+            }
+        } catch (e) {
+            // ignore
         }
 
         await saveChat();
