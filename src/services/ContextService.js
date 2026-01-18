@@ -1,7 +1,7 @@
 import { getRegexedString } from '../../../../../extensions/regex/engine.js'
 import { extStates } from '../core/state.js';
 import { ContextType, MessageRole } from '../core/constants.js';
-import { getBlockEncloseRegex, getBlockFromMessageWithRegex } from '../utils/blockUtils.js';
+import { getBlockFromMessage } from '../utils/blockUtils.js';
 
 const { 
     substituteParams, 
@@ -141,7 +141,6 @@ export const ContextService = {
      * Gets context from a previous block without conditions.
      */
     getPreviousBlockContextUnconditional(block, messageId, may_current = false, count = 1) {
-        const block_regex = getBlockEncloseRegex(block.name);
         const blocks = [];
         if (count === undefined || count < 1) {
             count = 1;
@@ -151,7 +150,7 @@ export const ContextService = {
         for (let i = startId; i >= 0 && blocks.length < count; i--) {
             const message = chat[i];
             if (message.extra?.extblocks) {
-                const blockContent = getBlockFromMessageWithRegex(message.extra.extblocks, block_regex);
+                const blockContent = getBlockFromMessage(message.extra.extblocks, block.name);
                 if (blockContent !== '') {
                     blocks.push(blockContent);
                 }

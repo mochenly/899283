@@ -30,47 +30,84 @@ export function getRegexForBlock(block_name) {
 }
 
 /**
- * Generates a RegExp for enclosing/extracting block content.
- * @param {string} block_name 
- * @returns {RegExp}
- */
-export function getBlockEncloseRegex(block_name) {
-    const block_names = checkAttributesInBlockName(block_name);
-    const block_regex = new RegExp(`(?:[\\s\\S]*?(?=<${block_names.upper_block_name}(\\s+[^>]+)?>)|$)|(?<=<\\/${block_names.bottom_block_name}>|^)[\\s\\S]*`, "g");
-    return block_regex;
-}
-
-/**
- * Extracts block content from a message using a provided regex.
- * @param {string} message 
- * @param {RegExp} block_regex 
- * @returns {string}
- */
-export function getBlockFromMessageWithRegex(message, block_regex) {
-    let block = message.replace(block_regex, '');
-    block = block.replace(/^<+/, '<');
-    return block;
-}
-
-/**
- * Extracts block content from a message by block name.
- * @param {string} message 
- * @param {string} block_name 
+ * Extracts block content (including tags) from a message by block name.
+ * Returns the first matching block.
+ * @param {string} message
+ * @param {string} block_name
  * @returns {string}
  */
 export function getBlockFromMessage(message, block_name) {
-    const block_regex = getBlockEncloseRegex(block_name);
-    return getBlockFromMessageWithRegex(message, block_regex);
+    if (!message) return '';
+    const { upper_block_name, bottom_block_name } = checkAttributesInBlockName(block_name);
+    const startTagIndicator = `<${upper_block_name}`;
+    const closingTag = `</${bottom_block_name}>`;
+    
+    let startIndex = message.indexOf(startTagIndicator);
+    
+    while (startIndex !== -1) {
+        const nextChar = message[startIndex + startTagIndicator.length];
+        if (nextChar === '>' || nextChar === ' ' || nextChar === '\t' || nextChar === '\n' || nextChar === '\r') {
+             const tagEndIndex = message.indexOf('>', startIndex);
+             if (tagEndIndex === -1) {
+                 startIndex = message.indexOf(startTagIndicator, startIndex + 1);
+                 continue;
+             }
+
+             const endIndex = message.indexOf(closingTag, tagEndIndex);
+             if (endIndex === -1) {
+                 startIndex = message.indexOf(startTagIndicator, startIndex + 1);
+                 continue;
+             }
+
+             return message.substring(startIndex, endIndex + closingTag.length);
+        }
+        startIndex = message.indexOf(startTagIndicator, startIndex + 1);
+    }
+    
+    return '';
 }
 
 /**
- * Extracts content from multiple blocks of the same name in a message.
- * @param {string} message 
- * @param {string} block_name 
+ * Extracts and concatenates inner content from multiple blocks of the same name.
+ * @param {string} message
+ * @param {string} block_name
  * @returns {string}
  */
 export function getMultiBlockContentFromMessage(message, block_name) {
-    const block_names = checkAttributesInBlockName(block_name);
-    const block_regex = new RegExp(`<${block_names.upper_block_name}(\\s+[^>]+)?>\\n*|<\\/${block_names.bottom_block_name}>|(?:(?<=^)|(?<=<\\/${block_names.bottom_block_name}>))([\\s\\S]*?)(?=<${block_names.upper_block_name}(\\s+[^>]+)?>|$)`, "g");
-    return getBlockFromMessageWithRegex(message, block_regex).trim();
+    if (!message) return '';
+    const { upper_block_name, bottom_block_name } = checkAttributesInBlockName(block_name);
+    const startTagIndicator = `<${upper_block_name}`;
+    const closingTag = `</${bottom_block_name}>`;
+    
+    let contents = [];
+    let searchIndex = 0;
+
+    while (true) {
+        let startIndex = message.indexOf(startTagIndicator, searchIndex);
+        if (startIndex === -1) break;
+
+        const nextChar = message[startIndex + startTagIndicator.length];
+        if (nextChar === '>' || nextChar === ' ' || nextChar === '\t' || nextChar === '\n' || nextChar === '\r') {
+            const tagEndIndex = message.indexOf('>', startIndex);
+            if (tagEndIndex === -1) {
+                searchIndex = startIndex + 1;
+                continue;
+            }
+
+            const endIndex = message.indexOf(closingTag, tagEndIndex);
+            if (endIndex === -1) {
+                searchIndex = startIndex + 1;
+                continue;
+            }
+
+            // Extract inner content
+            const innerContent = message.substring(tagEndIndex + 1, endIndex);
+            contents.push(innerContent.trim());
+            searchIndex = endIndex + closingTag.length;
+        } else {
+            searchIndex = startIndex + 1;
+        }
+    }
+
+    return contents.join('\n').trim();
 }

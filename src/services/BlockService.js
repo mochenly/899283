@@ -2,7 +2,7 @@ import { getFileText } from '../../../../../utils.js';
 import { extStates } from '../core/state.js';
 import { extName, BlockType, defaultExtPrefix, MessageRole } from '../core/constants.js';
 import { ContextService } from './ContextService.js';
-import { getBlockEncloseRegex, getRegexForBlock, getBlockFromMessageWithRegex, getBlockFromMessage  } from '../utils/blockUtils.js';
+import { getRegexForBlock, getBlockFromMessage  } from '../utils/blockUtils.js';
 import { updateOrInsert } from '../utils/dataUtils.js';
 
 const {
@@ -237,7 +237,7 @@ export const BlockService = {
             const blocksToDisplay = [];
             for (const block of allBlocks) {
                 if (!block.hide_display) {
-                    const blockContent = getBlockFromMessageWithRegex(message.extra.extblocks, getBlockEncloseRegex(block.name));
+                    const blockContent = getBlockFromMessage(message.extra.extblocks, block.name);
                     if (blockContent) {
                         blocksToDisplay.push(blockContent);
                     }
@@ -351,13 +351,12 @@ export const BlockService = {
         if (!chat[0]) return;
 
         const allBlocks = this.getAllBlocks();
-        const allBlocksEncloseRegex = allBlocks.map(block => getBlockEncloseRegex(block.name));
         const allBlocksPurgeRegex = new RegExp(`${allBlocks.map(block => getRegexForBlock(block.name)).join('|')}`, 'g');
 
         let blocksStr = '';
         for (let idx = 0; idx < allBlocks.length; idx++) {
-            const encloseRegex = allBlocksEncloseRegex[idx];
-            const enclosedBlock = chat[0].mes.replace(encloseRegex, '');
+            const block = allBlocks[idx];
+            const enclosedBlock = getBlockFromMessage(chat[0].mes, block.name);
             if (enclosedBlock !== '') {
                 blocksStr += blocksStr === '' ? enclosedBlock : `\n${enclosedBlock}`
             }

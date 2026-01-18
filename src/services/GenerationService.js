@@ -2,8 +2,6 @@ import { BlockType } from '../core/constants.js';
 import { extStates } from '../core/state.js';
 import { PluginRegistry } from '../core/PluginRegistry.js';
 import { BlockService } from './BlockService.js';
-import { ContextService } from './ContextService.js';
-import { getBlockFromMessage } from '../utils/blockUtils.js';
 import { stringToRegex } from '../utils/stringUtils.js';
 
 const { chat } = SillyTavern.getContext();
