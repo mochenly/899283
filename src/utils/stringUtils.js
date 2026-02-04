@@ -49,7 +49,7 @@ export function removeAfterSubstring(str, substring) {
 export function removeAfterRegexMatch(str, regex) {
     const match = regex.exec(str);
     if (match) {
-        return str.slice(0, match.index);
+        return str.slice(0, match.index + match[0].length);
     }
     return str;
 }
