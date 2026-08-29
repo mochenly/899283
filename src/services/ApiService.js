@@ -123,7 +123,7 @@ export const ApiService = {
             });
             if (!response.ok) throw new Error(`Could not load models (HTTP ${response.status}).`);
             const data = await response.json();
-            return this.setManualModels(data.data ?? data.models ?? []);
+            return this.setManualModels(data);
         }
 
         const endpoint = this.getManualUrl(preset.manual_endpoint, 'models');
@@ -133,13 +133,26 @@ export const ApiService = {
         const response = await fetch(endpoint, { headers });
         if (!response.ok) throw new Error(`Could not load models (HTTP ${response.status}).`);
         const data = await response.json();
-        return this.setManualModels(Array.isArray(data) ? data : (data.data ?? data.models ?? []));
+        return this.setManualModels(data);
     },
 
     /** Stores a normalized list of models returned by either connection type. */
     setManualModels(rawModels) {
         const preset = extStates.api_preset;
-        const models = rawModels
+        let modelEntries = rawModels;
+        for (let i = 0; i < 3 && !Array.isArray(modelEntries) && modelEntries && typeof modelEntries === 'object'; i++) {
+            const nestedModels = modelEntries.data ?? modelEntries.models;
+            if (!nestedModels || nestedModels === modelEntries) break;
+            modelEntries = nestedModels;
+        }
+        if (!Array.isArray(modelEntries) && modelEntries && typeof modelEntries === 'object') {
+            modelEntries = Object.values(modelEntries);
+        }
+        if (!Array.isArray(modelEntries)) {
+            throw new Error('The endpoint returned an invalid models response.');
+        }
+
+        const models = modelEntries
             .map(model => typeof model === 'string' ? model : (model.id ?? model.name))
             .filter(Boolean)
             .sort((a, b) => a.localeCompare(b));
