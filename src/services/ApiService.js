@@ -1,4 +1,4 @@
-import { oai_settings, proxies, chat_completion_sources } from '../../../../../openai.js';
+import { proxies, chat_completion_sources } from '../../../../../openai.js';
 import { getEventSourceStream } from '../../../../../sse-stream.js';
 import { SECRET_KEYS, readSecretState, secret_state } from '../../../../../secrets.js';
 
@@ -123,7 +123,6 @@ export const ApiService = {
                 body: JSON.stringify({
                     chat_completion_source: chat_completion_sources.CUSTOM,
                     custom_url: this.getManualUrl(preset.manual_endpoint, ''),
-                    custom_include_headers: oai_settings.custom_include_headers,
                     secret_id: preset.manual_tavern_secret_id,
                 }),
             });
@@ -282,9 +281,6 @@ export const ApiService = {
                 stream,
                 chat_completion_source: chat_completion_sources.CUSTOM,
                 custom_url: this.getManualUrl(preset.manual_endpoint, ''),
-                custom_include_headers: oai_settings.custom_include_headers,
-                custom_include_body: oai_settings.custom_include_body,
-                custom_exclude_body: oai_settings.custom_exclude_body,
                 secret_id: preset.manual_tavern_secret_id,
             }),
             signal: extStates.abortController.signal,
