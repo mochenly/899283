@@ -293,7 +293,7 @@ input.disable_ExtBlocks {
     flex-grow: 1;
 }
 
-.flex-container > #ExtBlocks-manual-model.text_pole {
+.flex-container > #ExtBlocks-manual-model-select.text_pole {
     width: auto;
     flex-grow: 1;
 }

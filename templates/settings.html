@@ -92,10 +92,12 @@
 
                     <label for="ExtBlocks-manual-model">Model:</label>
                     <div class="flex-container">
-                        <input id="ExtBlocks-manual-model" class="text_pole" type="text" list="ExtBlocks-manual-model-list" placeholder="Select or enter a model name">
-                        <datalist id="ExtBlocks-manual-model-list"></datalist>
+                        <select id="ExtBlocks-manual-model-select" class="text_pole">
+                            <option value="">Refresh models to select one</option>
+                        </select>
                         <div id="ExtBlocks-manual-models-refresh" class="menu_button menu_button_icon fa-solid fa-arrows-rotate" title="Load models from endpoint"></div>
                     </div>
+                    <input id="ExtBlocks-manual-model" class="text_pole" type="text" placeholder="Or enter a model ID manually">
                     <small>Uses <code>/models</code> and <code>/chat/completions</code>. The endpoint must allow browser requests (CORS).</small>
                 </div>
 

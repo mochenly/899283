@@ -164,6 +164,15 @@ export const SettingsUI = {
 
         $('#ExtBlocks-manual-model').off('input').on('input', function () {
             extStates.api_preset.manual_model = String($(this).val()).trim();
+            $('#ExtBlocks-manual-model-select').val(extStates.api_preset.manual_model);
+            saveSettingsDebounced();
+        });
+
+        $('#ExtBlocks-manual-model-select').off('change').on('change', function () {
+            const model = String($(this).val());
+            if (!model) return;
+            extStates.api_preset.manual_model = model;
+            $('#ExtBlocks-manual-model').val(model);
             saveSettingsDebounced();
         });
 

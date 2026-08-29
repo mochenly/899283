@@ -61,9 +61,14 @@ export const ApiService = {
     /** Updates the model suggestions without overwriting a manually entered value. */
     refreshManualModels() {
         const models = extStates.api_preset.manual_models ?? [];
-        const list = $('#ExtBlocks-manual-model-list');
-        list.empty();
-        models.forEach(model => list.append($('<option>', { value: model })));
+        const select = $('#ExtBlocks-manual-model-select');
+        const selectedModel = extStates.api_preset.manual_model ?? '';
+        select.empty().append($('<option>', { value: '', text: 'Refresh models to select one' }));
+        models.forEach(model => select.append($('<option>', { value: model, text: model })));
+        if (selectedModel && !models.includes(selectedModel)) {
+            select.append($('<option>', { value: selectedModel, text: selectedModel }));
+        }
+        select.val(selectedModel);
     },
 
     /** Populates saved Custom API keys without exposing their values. */
