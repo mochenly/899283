@@ -120,6 +120,68 @@ export const SettingsUI = {
             $('#ExtBlocks-proxy').slideToggle(200, 'swing');
         });
 
+        $('#ExtBlocks-connection-mode').off('change').on('change', function () {
+            extStates.api_preset.connection_mode = String($(this).val());
+            ApiService.toggleConnectionSettings();
+            saveSettingsDebounced();
+        });
+
+        $('#ExtBlocks-manual-endpoint').off('input').on('input', function () {
+            extStates.api_preset.manual_endpoint = String($(this).val()).trim();
+            saveSettingsDebounced();
+        });
+
+        $('#ExtBlocks-manual-api-key').off('input').on('input', function () {
+            extStates.api_preset.manual_api_key = String($(this).val());
+            saveSettingsDebounced();
+        });
+
+        $('#ExtBlocks-manual-key-source').off('change').on('change', function () {
+            extStates.api_preset.manual_key_source = $(this).prop('checked') ? 'tavern' : 'manual';
+            ApiService.toggleManualKeySettings();
+            saveSettingsDebounced();
+        });
+
+        $('#ExtBlocks-manual-tavern-secret').off('change').on('change', function () {
+            extStates.api_preset.manual_tavern_secret_id = String($(this).val());
+            saveSettingsDebounced();
+        });
+
+        $('#ExtBlocks-manual-tavern-secrets-refresh').off('click').on('click', async function () {
+            const button = $(this);
+            button.addClass('fa-spin').prop('disabled', true);
+            try {
+                await ApiService.refreshTavernSecretsFromServer();
+                $('#ExtBlocks-manual-tavern-secret').val(extStates.api_preset.manual_tavern_secret_id ?? '');
+                toastr.success('Saved Tavern keys refreshed.');
+            } catch (error) {
+                console.error('[ExtBlocks] Could not refresh Tavern keys.', error);
+                toastr.error('Could not refresh saved Tavern keys.');
+            } finally {
+                button.removeClass('fa-spin').prop('disabled', false);
+            }
+        });
+
+        $('#ExtBlocks-manual-model').off('input').on('input', function () {
+            extStates.api_preset.manual_model = String($(this).val()).trim();
+            saveSettingsDebounced();
+        });
+
+        $('#ExtBlocks-manual-models-refresh').off('click').on('click', async function () {
+            const button = $(this);
+            button.addClass('fa-spin').prop('disabled', true);
+            try {
+                const models = await ApiService.refreshManualModelsFromEndpoint();
+                saveSettingsDebounced();
+                toastr.success(`Loaded ${models.length} model${models.length === 1 ? '' : 's'}.`);
+            } catch (error) {
+                console.error('[ExtBlocks] Could not load manual models.', error);
+                toastr.error(error.message || 'Could not load models from the manual endpoint.');
+            } finally {
+                button.removeClass('fa-spin').prop('disabled', false);
+            }
+        });
+
         $('#ExtBlocks-proxy-stream').off('click').on('change', function () {
             const value = $('#ExtBlocks-proxy-stream').prop('checked');
             extStates.api_preset.stream = value;

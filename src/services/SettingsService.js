@@ -56,6 +56,13 @@ export const SettingsService = {
             preset.top_p = preset.top_p ?? defaultApiPreset.top_p;
             preset.max_tokens = preset.max_tokens ?? defaultApiPreset.max_tokens;
             preset.reasoning_effort = preset.reasoning_effort ?? defaultApiPreset.reasoning_effort;
+            preset.connection_mode = preset.connection_mode ?? defaultApiPreset.connection_mode;
+            preset.manual_endpoint = preset.manual_endpoint ?? defaultApiPreset.manual_endpoint;
+            preset.manual_api_key = preset.manual_api_key ?? defaultApiPreset.manual_api_key;
+            preset.manual_key_source = preset.manual_key_source ?? (preset.manual_tavern_secret_id ? 'tavern' : 'manual');
+            preset.manual_tavern_secret_id = preset.manual_tavern_secret_id ?? defaultApiPreset.manual_tavern_secret_id;
+            preset.manual_model = preset.manual_model ?? defaultApiPreset.manual_model;
+            preset.manual_models = Array.isArray(preset.manual_models) ? preset.manual_models : [];
         }
 
         if (migration_done) {

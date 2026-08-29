@@ -7,6 +7,13 @@ export const defaultApiPreset = {
     reasoning_effort: 'auto',
     confirmation_jb: false,
     connection_profile: extensionSettings.connectionManager.selectedProfile,
+    connection_mode: 'profile',
+    manual_endpoint: '',
+    manual_api_key: '',
+    manual_key_source: 'manual',
+    manual_tavern_secret_id: '',
+    manual_model: '',
+    manual_models: [],
     stream: false,
 };
 

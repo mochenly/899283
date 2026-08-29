@@ -293,8 +293,69 @@ input.disable_ExtBlocks {
     flex-grow: 1;
 }
 
-#ExtBlocks-proxy-connection-profile-refresh {
+.flex-container > #ExtBlocks-manual-model.text_pole {
+    width: auto;
+    flex-grow: 1;
+}
+
+.flex-container > #ExtBlocks-manual-tavern-secret.text_pole {
+    width: auto;
+    flex-grow: 1;
+}
+
+#ExtBlocks-proxy-connection-profile-refresh,
+#ExtBlocks-manual-models-refresh,
+#ExtBlocks-manual-tavern-secrets-refresh {
     margin-left: 0.5em;
+}
+
+.ExtBlocks-manual-key-source {
+    display: flex;
+    align-items: center;
+    gap: 0.55em;
+    margin-bottom: 0.45em;
+}
+
+.ExtBlocks-manual-key-switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.ExtBlocks-manual-key-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.ExtBlocks-manual-key-slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    background: var(--black50a);
+    transition: background 0.2s ease;
+}
+
+.ExtBlocks-manual-key-slider::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    left: 3px;
+    bottom: 3px;
+    border-radius: 50%;
+    background: var(--SmartThemeBodyColor);
+    transition: transform 0.2s ease;
+}
+
+.ExtBlocks-manual-key-switch input:checked + .ExtBlocks-manual-key-slider {
+    background: var(--SmartThemeQuoteColor);
+}
+
+.ExtBlocks-manual-key-switch input:checked + .ExtBlocks-manual-key-slider::before {
+    transform: translateX(18px);
 }
 
 .ExtBlocks-editor-message-holder {

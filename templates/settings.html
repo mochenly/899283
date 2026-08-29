@@ -43,6 +43,16 @@
                 </div>
 
                 <div class="flex-container flexFlowColumn">
+                    <label for="ExtBlocks-connection-mode">
+                        Connection type:
+                    </label>
+                    <select id="ExtBlocks-connection-mode" class="text_pole">
+                        <option value="profile">Connection Profile</option>
+                        <option value="manual">Manual (OpenAI-compatible)</option>
+                    </select>
+                </div>
+
+                <div id="ExtBlocks-profile-connection-settings" class="flex-container flexFlowColumn">
                     <label for="ExtBlocks-proxy-connection-profile">
                         Connection Profile:
                     </label>
@@ -50,6 +60,43 @@
                         <select id="ExtBlocks-proxy-connection-profile" class="text_pole"></select>
                         <div id="ExtBlocks-proxy-connection-profile-refresh" class="menu_button menu_button_icon fa-solid fa-arrows-rotate" title="Refresh connection profiles list"></div>
                     </div>
+                </div>
+
+                <div id="ExtBlocks-manual-connection-settings" class="flex-container flexFlowColumn" style="display:none;">
+                    <label for="ExtBlocks-manual-endpoint">Endpoint:</label>
+                    <input id="ExtBlocks-manual-endpoint" class="text_pole" type="url" maxlength="500" placeholder="https://api.example.com/v1">
+
+                    <label>API key source:</label>
+                    <div class="ExtBlocks-manual-key-source">
+                        <span>Manual</span>
+                        <label class="ExtBlocks-manual-key-switch" title="Switch between a manually entered key and a saved Tavern key">
+                            <input id="ExtBlocks-manual-key-source" type="checkbox">
+                            <span class="ExtBlocks-manual-key-slider"></span>
+                        </label>
+                        <span>Tavern</span>
+                    </div>
+
+                    <div id="ExtBlocks-manual-key-input-settings">
+                        <label for="ExtBlocks-manual-api-key">API key:</label>
+                        <input id="ExtBlocks-manual-api-key" class="text_pole" type="password" maxlength="1000" autocomplete="new-password" placeholder="Bearer key (without 'Bearer')">
+                    </div>
+
+                    <div id="ExtBlocks-manual-tavern-key-settings">
+                        <label for="ExtBlocks-manual-tavern-secret">Saved Tavern key:</label>
+                        <div class="flex-container">
+                            <select id="ExtBlocks-manual-tavern-secret" class="text_pole"></select>
+                            <div id="ExtBlocks-manual-tavern-secrets-refresh" class="menu_button menu_button_icon fa-solid fa-arrows-rotate" title="Refresh saved Tavern keys"></div>
+                        </div>
+                        <small id="ExtBlocks-manual-tavern-secret-help">Keys saved in Tavern as Custom (OpenAI-compatible). The key stays in Tavern's secret manager.</small>
+                    </div>
+
+                    <label for="ExtBlocks-manual-model">Model:</label>
+                    <div class="flex-container">
+                        <input id="ExtBlocks-manual-model" class="text_pole" type="text" list="ExtBlocks-manual-model-list" placeholder="Select or enter a model name">
+                        <datalist id="ExtBlocks-manual-model-list"></datalist>
+                        <div id="ExtBlocks-manual-models-refresh" class="menu_button menu_button_icon fa-solid fa-arrows-rotate" title="Load models from endpoint"></div>
+                    </div>
+                    <small>Uses <code>/models</code> and <code>/chat/completions</code>. The endpoint must allow browser requests (CORS).</small>
                 </div>
 
                 <hr>
