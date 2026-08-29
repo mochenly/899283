@@ -349,6 +349,9 @@ export const ApiService = {
             'max_tokens': preset.max_tokens,
             'reasoning_effort': preset.reasoning_effort
         };
+        if (connection_profile['secret-id']) {
+            generate_data.secret_id = connection_profile['secret-id'];
+        }
         const top_p = preset.top_p;
         if (preset.top_p !== 1.0) {
             generate_data['top_p'] = top_p;
