@@ -143,7 +143,11 @@ export const SettingsUI = {
         });
 
         $('#ExtBlocks-manual-tavern-secret').off('change').on('change', function () {
-            extStates.api_preset.manual_tavern_secret_id = String($(this).val());
+            const secretId = String($(this).val());
+            extStates.api_preset.manual_tavern_secret_id = secretId;
+            extStates.api_preset.manual_key_source = secretId ? 'tavern' : 'manual';
+            $('#ExtBlocks-manual-key-source').prop('checked', Boolean(secretId));
+            ApiService.toggleManualKeySettings();
             saveSettingsDebounced();
         });
 
