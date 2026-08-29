@@ -40,7 +40,8 @@ export const defaultExtPrefix = '[ExtBlocks]';
 export const worldInfoMacrosNames = ['{{wiBefore}}', '{{wiAfter}}', '{{wiExamples}}', '{{wiDepth}}', '{{wiAll}}'];
 export const mainPromptMacros = '{{mainPrompt}}';
 
-export const path = 'third-party/extblocks';
+const extensionPathMatch = new URL(import.meta.url).pathname.match(/\/scripts\/extensions\/(.+)\/src\/core\/constants\.js$/);
+export const path = extensionPathMatch?.[1] ?? 'third-party/extblocks';
 export const templates_path = path + '/templates';
 
 export const BlockType = {
